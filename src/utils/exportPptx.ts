@@ -1,12 +1,94 @@
 import PptxGenJS from "pptxgenjs";
-import { Slide } from "../types";
+import { Slide, SlideTheme } from "../types";
 
-export const exportToPptx = async (slides: Slide[], filename: string = "apresentacao.pptx") => {
+// Helper para gerar imagem de gradiente via Canvas
+const createGradientBackground = (theme: SlideTheme): string | null => {
+  if (theme !== 'corporate' && theme !== 'purple') return null;
+
+  const width = 1000;
+  const height = 562; // 16:9 aspect ratio
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+
+  // 1. Base Gradient
+  const gradient = ctx.createLinearGradient(0, 0, width, height);
+  if (theme === 'corporate') {
+    // #1e293b -> #0f172a
+    gradient.addColorStop(0, '#1e293b');
+    gradient.addColorStop(1, '#0f172a');
+  } else if (theme === 'purple') {
+    // #4c1d95 -> #1e1b4b
+    gradient.addColorStop(0, '#4c1d95');
+    gradient.addColorStop(1, '#1e1b4b');
+  }
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, width, height);
+
+  // 2. Texture Overlay (As "bolinhas")
+  if (theme === 'corporate') {
+    // Dot Grid Pattern
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+    const dotSize = 1;
+    const gap = 24;
+
+    for (let x = 0; x < width; x += gap) {
+      for (let y = 0; y < height; y += gap) {
+        ctx.beginPath();
+        ctx.arc(x + 2, y + 2, dotSize, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  } else if (theme === 'purple') {
+    // Radial Glow
+    const radialGradient = ctx.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, height * 0.7);
+    radialGradient.addColorStop(0, 'rgba(139, 92, 246, 0.25)');
+    radialGradient.addColorStop(1, 'transparent');
+
+    ctx.fillStyle = radialGradient;
+    ctx.fillRect(0, 0, width, height);
+  }
+
+  return canvas.toDataURL('image/jpeg', 0.9);
+};
+
+export const exportToPptx = async (slides: Slide[], activeTheme: SlideTheme, filename: string = "apresentacao.pptx") => {
   const pres = new PptxGenJS();
 
   // Configuração básica
   pres.layout = "LAYOUT_16x9";
   pres.title = filename.replace(".pptx", "");
+
+  // Cores de texto fallback
+  const getThemeTextColor = (theme: SlideTheme) => {
+    switch (theme) {
+      case 'light': return '0F172A';
+      case 'dark': return 'F8FAFC';
+      case 'corporate': return 'FFFFFF';
+      case 'purple': return 'FFFFFF';
+      case 'minimal': return '18181B';
+      default: return '000000';
+    }
+  };
+
+  const themeTextColor = getThemeTextColor(activeTheme);
+
+  // Gerar background do tema (se for gradiente)
+  const themeGradientData = createGradientBackground(activeTheme);
+
+  // Cores sólidas para temas simples
+  const getThemeSolidColor = (theme: SlideTheme) => {
+    switch (theme) {
+      case 'light': return 'F8FAFC';
+      case 'dark': return '0F172A';
+      case 'minimal': return 'FFFFFF';
+      default: return 'FFFFFF';
+    }
+  }
+  const themeSolidColor = getThemeSolidColor(activeTheme);
 
   // Helper para converter pixels para polegadas (PPTX usa polegadas por padrão ou porcentagem)
   // O canvas original é 1000px de largura. O slide PPTX 16:9 padrão é 10x5.625 polegadas.
@@ -16,32 +98,68 @@ export const exportToPptx = async (slides: Slide[], filename: string = "apresent
   for (const slideData of slides) {
     const slide = pres.addSlide();
 
-    // Background
-    if (slideData.backgroundColor) {
-      // Se for cor hex
-      const color = slideData.backgroundColor.replace('#', '');
+    // Lógica de Background:
+    // 1. Se tem cor customizada no slide, usa ela.
+    // 2. Se não, e o tema tem gradiente gerado, usa a imagem do gradiente.
+    // 3. Se não, usa a cor sólida do tema.
+
+    if (slideData.backgroundColor && slideData.backgroundColor !== 'transparent') {
+      const color = slideData.backgroundColor.startsWith('#') ? slideData.backgroundColor.replace('#', '') : themeSolidColor;
       slide.background = { color };
+    } else if (themeGradientData) {
+      slide.background = { data: themeGradientData };
     } else {
-      // Fallback para branco se não tiver cor definida
-      slide.background = { color: 'FFFFFF' };
-      // TODO: Passar o activeTheme para pegar a cor correta seria ideal, 
-      // mas aqui estamos pegando direto do slideData. 
-      // Se o slideData não tiver bg, vai ficar branco.
+      slide.background = { color: themeSolidColor };
     }
 
     // Elementos
-    // Ordenar por z-index (índice no array)
-    slideData.elements.forEach((el) => {
+    // Processamento de Elementos (com Collision Detection)
+    // 1. Clonar e ordenar elementos
+    const elementsToRender = JSON.parse(JSON.stringify(slideData.elements)); // Deep copy para não mutar original
+
+    // Ordenar elementos por Y para processar de cima para baixo
+    elementsToRender.sort((a: any, b: any) => a.y - b.y);
+
+    for (let i = 0; i < elementsToRender.length; i++) {
+      const el = elementsToRender[i];
+
+      // Se for texto grande (Título), calcular altura real
+      if (el.type === 'text' && (el.fontSize || 24) >= 32) {
+        const fontSize = el.fontSize || 48;
+        // Estimativa Ajustada: 0.7 * fontSize para prever letras largas/bold
+        const boxWidth = el.width || 880;
+        const charWidth = fontSize * 0.7;
+        const charsPerLine = Math.floor(boxWidth / charWidth);
+        const lines = Math.ceil((el.content || "").length / charsPerLine);
+        const lineHeight = fontSize * 1.35;
+        const estimatedHeight = lines * lineHeight;
+
+        const bottomY = el.y + estimatedHeight;
+
+        // Verificar se o próximo elemento colide
+        for (let j = i + 1; j < elementsToRender.length; j++) {
+          const nextEl = elementsToRender[j];
+          // Se o próximo elemento começa antes do fim deste título + margem safe (60px)
+          if (nextEl.y < bottomY + 60) {
+            // Empurrar o próximo elemento
+            const shift = (bottomY + 60) - nextEl.y;
+            nextEl.y += shift;
+          }
+        }
+      }
+    }
+
+    // Renderizar Elementos Ajustados
+    elementsToRender.forEach((el: any) => {
       const x = pxToInch(el.x);
       const y = pxToInch(el.y);
       const w = el.width ? pxToInch(el.width) : undefined;
       const h = el.height ? pxToInch(el.height) : undefined;
 
       // Cores
-      let color = '000000';
-      if (el.color) {
+      let color = themeTextColor;
+      if (el.color && el.color !== 'var(--theme-text)') {
         if (el.color.startsWith('#')) color = el.color.replace('#', '');
-        else if (el.color === 'var(--theme-text)') color = '333333'; // Fallback seguro
       }
 
       const fontSize = el.fontSize || 24;
