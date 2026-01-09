@@ -284,19 +284,40 @@ function App() {
       const densityInstructions = densityMap[contentDensity as keyof typeof densityMap];
       
       const quizInstruction = includeQuiz 
-        ? `Após os slides de conteúdo, inclua exatamente ${numQuizQuestions} slide(s) de QUESTIONÁRIO/QUIZ. Cada slide de quiz deve ter uma pergunta no "title" e as opções de resposta no "subtitle" formatadas como tópicos.` 
+        ? `IMPORTANTE: Após os slides de conteúdo, você deve criar ${numQuizQuestions} slide(s) de QUIZ SEPARADOS.
+        
+REGRAS PARA SLIDES DE QUIZ:
+- O "title" deve conter APENAS a pergunta (sem alternativas)
+- O "subtitle" deve conter as alternativas formatadas como lista, uma por linha, exemplo:
+A. Primeira alternativa
+B. Segunda alternativa
+C. Terceira alternativa
+D. Quarta alternativa
+
+NUNCA misture as alternativas (A, B, C, D) no meio do texto da pergunta.` 
         : "";
 
-      const prompt = `Você é um especialista em criação de apresentações. 
-      Com base no tópico: "${aiPrompt}", gere uma apresentação completa.
-      ESTILO DE CONTEÚDO: ${densityInstructions}
-      ${quizInstruction}
-      A apresentação deve ter o seguinte fluxo:
-      1. Capa impactante.
-      2. Seguem ${numSlides} slides de CONTEÚDO detalhando o tópico.
-      3. ${includeQuiz ? `Seguem ${numQuizQuestions} slides de QUESTIONÁRIO.` : ""}
-      4. Slide de ENCERRAMENTO.
-      Saída: Array JSON com exatamente ${numSlides + 2 + (includeQuiz ? numQuizQuestions : 0)} objetos {"title", "subtitle"}. Sem markdown.`;
+      const prompt = `Você é um especialista em criação de apresentações educacionais. 
+      
+TÓPICO: "${aiPrompt}"
+
+ESTILO DE CONTEÚDO: ${densityInstructions}
+
+${quizInstruction}
+
+ESTRUTURA DA APRESENTAÇÃO:
+1. Slide 1: CAPA - Título impactante e subtítulo descritivo
+2. Slides 2 a ${numSlides + 1}: CONTEÚDO - Desenvolva o tema de forma clara e organizada
+   - IMPORTANTE: Estes slides NÃO devem conter perguntas ou alternativas de quiz
+   - Foque apenas em explicar o conteúdo
+3. ${includeQuiz ? `Slides ${numSlides + 2} a ${numSlides + 1 + numQuizQuestions}: QUESTIONÁRIO - Perguntas com 4 alternativas cada` : ""}
+4. Último slide: ENCERRAMENTO - Mensagem final ou resumo
+
+FORMATO DE SAÍDA:
+Retorne um array JSON com exatamente ${numSlides + 2 + (includeQuiz ? numQuizQuestions : 0)} objetos no formato:
+{"title": "Título do slide", "subtitle": "Conteúdo ou alternativas (para quiz)"}
+
+IMPORTANTE: Não use markdown, não adicione explicações extras, apenas o JSON puro.`;
 
       const result = await model.generateContent(prompt);
       const response = await result.response;
@@ -308,13 +329,62 @@ function App() {
       if (Array.isArray(slidesData)) {
         const newSlides: Slide[] = slidesData.map((s, i) => {
           const slideId = Date.now() + i + "";
+          
+          // Detectar se é um slide de quiz (geralmente tem alternativas A, B, C, D)
+          const isQuizSlide = s.subtitle && /^[A-D]\.\s/.test(s.subtitle);
+          
+          // Calcular tamanho de fonte dinâmico baseado no comprimento do texto
+          const titleLength = (s.title || "").length;
+          const subtitleLength = (s.subtitle || "").length;
+          
+          // Título: quanto mais longo, menor a fonte
+          let titleFontSize = 48;
+          if (titleLength > 100) titleFontSize = 24;
+          else if (titleLength > 80) titleFontSize = 28;
+          else if (titleLength > 60) titleFontSize = 32;
+          else if (titleLength > 40) titleFontSize = 36;
+          
+          // Subtítulo: ajustar baseado no tipo e tamanho
+          let subtitleFontSize = 24;
+          if (isQuizSlide) {
+            // Quiz slides precisam de fonte menor para caber as alternativas
+            if (subtitleLength > 200) subtitleFontSize = 16;
+            else if (subtitleLength > 150) subtitleFontSize = 18;
+            else subtitleFontSize = 20;
+          } else {
+            // Slides normais
+            if (subtitleLength > 300) subtitleFontSize = 18;
+            else if (subtitleLength > 200) subtitleFontSize = 20;
+            else if (subtitleLength > 100) subtitleFontSize = 22;
+          }
+          
+          // Ajustar posição Y do subtítulo baseado no tamanho do título
+          const titleY = 150; // Começar mais para baixo, mais centralizado
+          const subtitleY = titleY + titleFontSize + 50; // 50px de margem entre título e subtítulo
+          
           return {
             id: slideId,
             title: s.title || "Sem título",
             subtitle: s.subtitle || "",
             elements: [
-              { id: `el-${slideId}-t`, type: 'text', content: s.title || "Sem título", x: 100, y: 100, fontSize: 48 },
-              { id: `el-${slideId}-s`, type: 'text', content: s.subtitle || "", x: 100, y: 200, fontSize: 24 }
+              { 
+                id: `el-${slideId}-t`, 
+                type: 'text', 
+                content: s.title || "Sem título", 
+                x: 60, 
+                y: titleY, 
+                fontSize: titleFontSize,
+                color: 'var(--theme-text)'
+              },
+              { 
+                id: `el-${slideId}-s`, 
+                type: 'text', 
+                content: s.subtitle || "", 
+                x: 60, 
+                y: subtitleY, 
+                fontSize: subtitleFontSize,
+                color: 'var(--theme-text)'
+              }
             ]
           };
         });
