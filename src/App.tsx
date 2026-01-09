@@ -52,7 +52,7 @@ function App() {
           if (type === 'pdf') {
               await exportToPdf(slides, activeTheme, `${filename}.pdf`);
           } else {
-              await exportToPptx(slides, activeTheme, `${filename}.pptx`);
+              await exportToPptx(slides, activeTheme, activeFont, `${filename}.pptx`);
           }
       } catch (e) {
           console.error("Export falhou", e);

@@ -1,11 +1,11 @@
 import PptxGenJS from "pptxgenjs";
-import { Slide, SlideTheme } from "../types";
+import { Slide, SlideTheme, SlideFont } from "../types";
 
 const createGradientBackground = (theme: SlideTheme): string | null => {
   if (theme !== 'corporate' && theme !== 'purple') return null;
 
   const width = 1000;
-  const height = 562; 
+  const height = 562;
 
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -15,11 +15,9 @@ const createGradientBackground = (theme: SlideTheme): string | null => {
 
   const gradient = ctx.createLinearGradient(0, 0, width, height);
   if (theme === 'corporate') {
-
     gradient.addColorStop(0, '#1e293b');
     gradient.addColorStop(1, '#0f172a');
   } else if (theme === 'purple') {
-
     gradient.addColorStop(0, '#4c1d95');
     gradient.addColorStop(1, '#1e1b4b');
   }
@@ -27,7 +25,6 @@ const createGradientBackground = (theme: SlideTheme): string | null => {
   ctx.fillRect(0, 0, width, height);
 
   if (theme === 'corporate') {
-
     ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
     const dotSize = 1;
     const gap = 24;
@@ -40,7 +37,6 @@ const createGradientBackground = (theme: SlideTheme): string | null => {
       }
     }
   } else if (theme === 'purple') {
-
     const radialGradient = ctx.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, height * 0.7);
     radialGradient.addColorStop(0, 'rgba(139, 92, 246, 0.25)');
     radialGradient.addColorStop(1, 'transparent');
@@ -52,7 +48,7 @@ const createGradientBackground = (theme: SlideTheme): string | null => {
   return canvas.toDataURL('image/jpeg', 0.9);
 };
 
-export const exportToPptx = async (slides: Slide[], activeTheme: SlideTheme, filename: string = "apresentacao.pptx") => {
+export const exportToPptx = async (slides: Slide[], activeTheme: SlideTheme, activeFont: SlideFont, filename: string = "apresentacao.pptx") => {
   const pres = new PptxGenJS();
 
   pres.layout = "LAYOUT_16x9";
@@ -68,6 +64,20 @@ export const exportToPptx = async (slides: Slide[], activeTheme: SlideTheme, fil
       default: return '000000';
     }
   };
+
+  const getFontFamily = (fontType: SlideFont): string => {
+    switch (fontType) {
+      case 'sans': return 'Arial';
+      case 'serif': return 'Georgia';
+      case 'mono': return 'Courier New';
+      case 'display': return 'Arial Black';
+      case 'handwritten': return 'Segoe Print';
+      case 'times': return 'Times New Roman';
+      default: return 'Arial';
+    }
+  };
+
+  const fontFamily = getFontFamily(activeFont);
 
   const themeTextColor = getThemeTextColor(activeTheme);
 
@@ -97,7 +107,7 @@ export const exportToPptx = async (slides: Slide[], activeTheme: SlideTheme, fil
       slide.background = { color: themeSolidColor };
     }
 
-    const elementsToRender = JSON.parse(JSON.stringify(slideData.elements)); 
+    const elementsToRender = JSON.parse(JSON.stringify(slideData.elements));
 
     elementsToRender.sort((a: any, b: any) => a.y - b.y);
 
@@ -120,7 +130,6 @@ export const exportToPptx = async (slides: Slide[], activeTheme: SlideTheme, fil
           const nextEl = elementsToRender[j];
 
           if (nextEl.y < bottomY + 60) {
-
             const shift = (bottomY + 60) - nextEl.y;
             nextEl.y += shift;
           }
@@ -146,17 +155,14 @@ export const exportToPptx = async (slides: Slide[], activeTheme: SlideTheme, fil
           x, y, w, h,
           fontSize,
           color,
-          fontFace: 'Arial', 
-
+          fontFace: fontFamily,
           align: (el as any).textAlign || 'left',
           valign: 'top',
-
           wrap: true
         });
       }
       else if (el.type === 'image') {
         if (el.content) {
-
           slide.addImage({
             data: el.content,
             x, y, w, h
@@ -193,7 +199,6 @@ export const exportToPptx = async (slides: Slide[], activeTheme: SlideTheme, fil
     });
 
     if (selectedPath) {
-
       const buffer = await pres.write({ outputType: 'arraybuffer' }) as ArrayBuffer;
       await writeFile(selectedPath, new Uint8Array(buffer));
 
@@ -205,9 +210,6 @@ export const exportToPptx = async (slides: Slide[], activeTheme: SlideTheme, fil
     }
   } catch (err) {
     console.error("Erro ao salvar PPTX:", err);
-
     await pres.writeFile({ fileName: filename });
   }
 };
-
-
