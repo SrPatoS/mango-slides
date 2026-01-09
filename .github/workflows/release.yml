@@ -1,3 +1,5 @@
+name: Release Windows
+
 on:
   push:
     branches:
@@ -9,6 +11,7 @@ jobs:
     permissions:
       contents: write
     runs-on: windows-latest
+
     steps:
       - uses: actions/checkout@v4
 
@@ -20,16 +23,15 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Install frontend dependencies
+      - name: Install dependencies
         run: npm install
 
-      - name: Build the app and create release
+      - name: Build and release
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: v__VERSION__
-          releaseName: 'Mango Slides v__VERSION__'
+          releaseName: 'Mango Slides'
           releaseBody: 'Veja os assets abaixo para baixar e instalar.'
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false
