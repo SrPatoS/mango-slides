@@ -10,7 +10,7 @@ export interface Project {
 
 export interface SlideElement {
   id: string;
-  type: 'text' | 'image' | 'rect' | 'circle';
+  type: 'text' | 'image' | 'rect' | 'circle' | 'chart';
   content: string;
   x: number;
   y: number;
@@ -20,6 +20,9 @@ export interface SlideElement {
   fontSize?: number;
   fontWeight?: string | number;
   fontStyle?: string;
+  backgroundColor?: string;
+  chartType?: 'bar' | 'pie' | 'line';
+  chartData?: Array<{ name: string; value: number }>;
 }
 
 export interface Slide {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Cpu, Database, Info, Trash2, AlertTriangle, Download, Upload } from "lucide-react";
+import { X, Cpu, Database, Info, Trash2, AlertTriangle, Download, Upload, Image } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PasswordModal } from "./PasswordModal";
 
@@ -14,6 +14,8 @@ interface SettingsModalProps {
   setSelectedModel: (model: string) => void;
   onResetDatabase?: () => void;
   onSave: () => Promise<void>;
+  unsplashKey: string;
+  setUnsplashKey: (key: string) => void;
 }
 
 type SettingsTab = 'ai' | 'backup' | 'data' | 'about';
@@ -28,7 +30,9 @@ export const SettingsModal = ({
   selectedModel,
   setSelectedModel,
   onResetDatabase,
-  onSave
+  onSave,
+  unsplashKey,
+  setUnsplashKey
 }: SettingsModalProps) => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('ai');
   const [appInfo, setAppInfo] = useState({ name: 'MangoSlides Designer', version: 'Loading...' });
@@ -404,6 +408,27 @@ export const SettingsModal = ({
                             </div>
                           ))}
                         </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="settings-card" style={{ marginTop: '20px' }}>
+                    <div className="card-header">
+                      <div className="card-title">
+                        <Image size={20} />
+                        <span>Unsplash (Imagens)</span>
+                      </div>
+                    </div>
+                    <div className="card-body active">
+                      <div className="input-group">
+                        <label>Access Key</label>
+                        <input 
+                          type="password" 
+                          placeholder="Cole sua Access Key do Unsplash..."
+                          value={unsplashKey}
+                          onChange={(e) => setUnsplashKey(e.target.value)}
+                        />
+                        <small>Necessário para buscar imagens reais. Obtenha em <a href="https://unsplash.com/developers" target="_blank" rel="noopener noreferrer">Unsplash Developers</a>.</small>
                       </div>
                     </div>
                   </div>

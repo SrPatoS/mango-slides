@@ -1,7 +1,8 @@
 import { motion, useDragControls } from "framer-motion";
 import { Slide, SlideElement } from "../types";
-import { Trash2, Bold, Italic, GripVertical, ArrowUp, ArrowDown, ImageUp, AlignLeft, AlignCenter, AlignRight, AlignJustify } from "lucide-react";
+import { Trash2, Bold, Italic, GripVertical, ArrowUp, ArrowDown, ImageUp, AlignLeft, AlignCenter, AlignRight, AlignJustify, Edit3, X } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell, LineChart, Line, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 
 interface CanvasProps {
   activeSlide: Slide;
@@ -14,9 +15,19 @@ interface CanvasProps {
   deleteElement: (slideId: string, elementId: string) => void;
   theme: string;
   font: string;
+  onEditElement: (slideId: string, elementId: string) => void;
 }
 
 const ElementVisual = ({ el }: { el: SlideElement }) => {
+  // Paleta de cores simples para Pie Chart variantes
+  const getPieColors = (baseColor: string) => [
+      baseColor,
+      '#94a3b8',
+      '#cbd5e1', 
+      '#64748b',
+      '#475569'
+  ];
+
   return (
     <div
       style={{
@@ -25,6 +36,7 @@ const ElementVisual = ({ el }: { el: SlideElement }) => {
         top: el.y,
         width: el.width || 'auto',
         height: el.height || 'auto',
+        backgroundColor: el.backgroundColor || 'transparent',
         padding: '4px',
         boxSizing: 'border-box',
         display: 'flex',
@@ -73,6 +85,53 @@ const ElementVisual = ({ el }: { el: SlideElement }) => {
           }} 
         />
       )}
+
+      {el.type === 'chart' && el.chartData && (
+          <div style={{ width: '100%', height: '100%' }}>
+            <ResponsiveContainer width="100%" height="100%">
+                {el.chartType === 'bar' ? (
+                    <BarChart data={el.chartData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.3} stroke="#9ca3af" />
+                    <XAxis dataKey="name" stroke="#6b7280" fontSize={12} tickLine={false} axisLine={{ stroke: '#6b7280', opacity: 0.5 }} />
+                    <YAxis stroke="#6b7280" fontSize={12} tickLine={false} axisLine={{ stroke: '#6b7280', opacity: 0.5 }} />
+                    <Tooltip cursor={{fill: 'rgba(255,255,255,0.1)'}} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', color: '#000' }} />
+                    <Legend />
+                    <Bar dataKey="value" name="Valor" fill={el.color || '#8b5cf6'} radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                    </BarChart>
+                ) : el.chartType === 'line' ? (
+                    <LineChart data={el.chartData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.3} stroke="#9ca3af" />
+                    <XAxis dataKey="name" stroke="#6b7280" fontSize={12} axisLine={{ stroke: '#6b7280', opacity: 0.5 }} />
+                    <YAxis stroke="#6b7280" fontSize={12} axisLine={{ stroke: '#6b7280', opacity: 0.5 }} />
+                    <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', color: '#000' }} />
+                    <Legend />
+                    <Line type="monotone" dataKey="value" name="Valor" stroke={el.color || '#8b5cf6'} strokeWidth={3} dot={{r: 4, fill: el.color || '#8b5cf6'}} isAnimationActive={false} />
+                    </LineChart>
+                ) : (
+                    <PieChart>
+                        <Pie 
+                        data={el.chartData} 
+                        dataKey="value" 
+                        nameKey="name" 
+                        cx="50%" 
+                        cy="50%" 
+                        outerRadius="80%" 
+                        fill={el.color || "#8884d8"}
+                        label={({name, percent}) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                        stroke="none"
+                        isAnimationActive={false}
+                        >
+                        {el.chartData.map((_entry, index) => (
+                            <Cell key={`cell-${index}`} fill={getPieColors(el.color || '#8884d8')[index % 5]} />
+                        ))}
+                        </Pie>
+                        <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', color: '#000' }} />
+                        <Legend />
+                    </PieChart>
+                )}
+            </ResponsiveContainer>
+        </div>
+      )}
     </div>
   );
 };
@@ -85,7 +144,8 @@ const ElementControls = ({
   onSelect, 
   updateElement, 
   moveElement,
-  deleteElement 
+  deleteElement,
+  onEdit
 }: { 
   el: SlideElement, 
   activeSlideId: string,
@@ -94,7 +154,8 @@ const ElementControls = ({
   onSelect: () => void,
   updateElement: any,
   moveElement: any,
-  deleteElement: any
+  deleteElement: any,
+  onEdit: () => void
 }) => {
   const dragControls = useDragControls();
   const [isResizing, setIsResizing] = useState(false);
@@ -117,6 +178,10 @@ const ElementControls = ({
       onMouseDown={(e) => {
         e.stopPropagation();
         onSelect();
+      }}
+      onDoubleClick={(e) => {
+          e.stopPropagation();
+          if (el.type === 'chart') onEdit();
       }}
       initial={false}
       animate={{ 
@@ -326,6 +391,62 @@ const ElementControls = ({
                         Trocar Imagem
                     </button>
                 </div>
+            ) : el.type === 'chart' ? (
+                <>
+                    <button 
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onEdit();
+                        }}
+                        title="Editar Dados"
+                        style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}
+                    >
+                        <Edit3 size={18} />
+                        Editar Dados
+                    </button>
+                    <div style={{ width: '1px', height: '24px', backgroundColor: '#3f3f46' }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '11px', color: '#a1a1aa' }}>Cor</span>
+                        <input 
+                            type="color" 
+                            value={el.color || '#8b5cf6'} 
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                if (val !== el.color) updateElement(activeSlideId, el.id, { color: val });
+                            }}
+                            style={{ width: '24px', height: '24px', background: 'none', border: '1px solid #3f3f46', cursor: 'pointer', padding: 0, borderRadius: '4px' }}
+                        />
+                    </div>
+                    <div style={{ width: '1px', height: '24px', backgroundColor: '#3f3f46' }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '11px', color: '#a1a1aa' }}>Fundo</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <input 
+                                type="color" 
+                                value={el.backgroundColor || '#ffffff'} 
+                                onMouseDown={(e) => e.stopPropagation()}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val !== el.backgroundColor) updateElement(activeSlideId, el.id, { backgroundColor: val });
+                                }}
+                                style={{ width: '24px', height: '24px', background: 'none', border: '1px solid #3f3f46', cursor: 'pointer', padding: 0, borderRadius: '4px' }}
+                            />
+                            {el.backgroundColor && (
+                                <button 
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        updateElement(activeSlideId, el.id, { backgroundColor: undefined });
+                                    }}
+                                    title="Remover Fundo"
+                                    style={{ background: 'none', border: 'none', color: '#a1a1aa', cursor: 'pointer', display: 'flex', padding: 0 }}
+                                >
+                                    <X size={14} />
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </>
             ) : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span style={{ fontSize: '11px', color: '#a1a1aa' }}>Cor do Fundo</span>
@@ -463,7 +584,8 @@ export const Canvas = ({
   moveElement,
   deleteElement,
   theme, 
-  font 
+  font,
+  onEditElement
 }: CanvasProps) => {
 
   useEffect(() => {
@@ -524,10 +646,10 @@ export const Canvas = ({
             updateElement={updateElement}
             moveElement={moveElement}
             deleteElement={deleteElement}
+            onEdit={() => onEditElement && onEditElement(activeSlide.id, el.id)}
           />
         ))}
       </div>
     </div>
   );
 };
-

@@ -9,7 +9,9 @@ import {
   Sparkles, 
   Palette,
   PaintBucket,
-  ALargeSmall
+  ALargeSmall,
+  BarChart3,
+  Search
 } from "lucide-react";
 import { SlideTheme, SlideFont, Slide } from "../types";
 
@@ -20,7 +22,7 @@ interface ToolbarProps {
   setActiveTheme: (theme: SlideTheme) => void;
   activeFont: SlideFont;
   setActiveFont: (font: SlideFont) => void;
-  addElement: (type: 'text' | 'rect' | 'circle' | 'image') => void;
+  addElement: (type: 'text' | 'rect' | 'circle' | 'image' | 'chart' | 'web-image') => void;
   activeSlideId: string;
   updateSlide: (id: string, updates: Partial<Slide>) => void;
   onOpenAiModal: () => void;
@@ -63,9 +65,11 @@ export const Toolbar = ({
   const tools = [
     { id: 'select', icon: MousePointer2, title: 'Selecionar' },
     { id: 'text', icon: Type, onClick: () => addElement('text'), title: 'Adicionar Texto' },
-    { id: 'image', icon: ImageIcon, onClick: () => addElement('image'), title: 'Adicionar Imagem' },
+    { id: 'image', icon: ImageIcon, onClick: () => addElement('image'), title: 'Upload de Imagem' },
+    { id: 'web-image', icon: Search, onClick: () => addElement('web-image'), title: 'Buscar Imagem Online' },
     { id: 'rect', icon: Square, onClick: () => addElement('rect'), title: 'Adicionar Retângulo' },
     { id: 'circle', icon: Circle, onClick: () => addElement('circle'), title: 'Adicionar Círculo' },
+    { id: 'chart', icon: BarChart3, onClick: () => addElement('chart'), title: 'Adicionar Gráfico' },
     { id: 'bg-color', icon: PaintBucket, type: 'color', title: 'Cor do Fundo do Slide' },
     { id: 'layers', icon: Layers, onClick: onToggleLayers, title: 'Camadas' },
     { 
@@ -176,4 +180,3 @@ export const Toolbar = ({
     </div>
   );
 };
-

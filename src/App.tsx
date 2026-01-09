@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import Database from "@tauri-apps/plugin-sql";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { Moon, Sun, Save, AlertCircle, Settings, Download } from "lucide-react";
+import { Moon, Sun, Save, AlertCircle, Settings, Download, Play } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 
 import { Sidebar } from "./components/Sidebar";
@@ -15,6 +15,9 @@ import { LayersPanel } from "./components/LayersPanel";
 import { ProjectsScreen } from "./components/ProjectsScreen";
 import { ConfirmModal } from "./components/ConfirmModal";
 import { ExportModal } from "./components/ExportModal";
+import { PresentationMode } from "./components/PresentationMode";
+import { ChartEditorModal } from "./components/ChartEditorModal";
+import { ImagePickerModal } from "./components/ImagePickerModal";
 
 import { Slide, SlideTheme, SlideFont, Project } from "./types";
 import { exportToPdf } from "./utils/exportPdf";
@@ -41,6 +44,15 @@ function App() {
   });
 
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isPresenting, setIsPresenting] = useState(false);
+  const [isChartEditorOpen, setIsChartEditorOpen] = useState(false);
+  const [editingElementInfo, setEditingElementInfo] = useState<{slideId: string, elementId: string} | null>(null);
+  const [isImagePickerOpen, setIsImagePickerOpen] = useState(false);
+  const [unsplashKey, setUnsplashKey] = useState<string>(localStorage.getItem('unsplash_key') || '');
+  
+  useEffect(() => {
+    localStorage.setItem('unsplash_key', unsplashKey);
+  }, [unsplashKey]);
 
   const handleExport = async (type: 'pdf' | 'pptx') => {
       setIsExportModalOpen(false);
@@ -472,10 +484,14 @@ function App() {
     }));
   };
 
-  const addElement = (type: 'text' | 'rect' | 'circle' | 'image') => {
+  const addElement = (type: 'text' | 'rect' | 'circle' | 'image' | 'chart' | 'web-image') => {
     if (type === 'image') {
       fileInputRef.current?.click();
       return;
+    }
+    if (type === 'web-image') {
+        setIsImagePickerOpen(true);
+        return;
     }
 
     const newElement: any = {
@@ -484,10 +500,16 @@ function App() {
       content: type === 'text' ? 'Novo Texto' : '',
       x: 300,
       y: 200,
-      width: type === 'text' ? undefined : 150,
-      height: type === 'text' ? undefined : 150,
+      width: type === 'text' ? undefined : (type === 'chart' ? 400 : 150),
+      height: type === 'text' ? undefined : (type === 'chart' ? 300 : 150),
       fontSize: type === 'text' ? 24 : undefined,
-      color: type === 'text' ? 'var(--theme-text)' : 'var(--accent)'
+      color: type === 'text' ? 'var(--theme-text)' : 'var(--accent)',
+      chartType: type === 'chart' ? 'bar' : undefined,
+      chartData: type === 'chart' ? [
+        { name: 'Cat A', value: 40 },
+        { name: 'Cat B', value: 30 },
+        { name: 'Cat C', value: 20 },
+      ] : undefined
     };
 
     setSlides(prev => prev.map(s => {
@@ -817,6 +839,25 @@ IMPORTANTE: Não use markdown, não adicione explicações extras, apenas o JSON
               >
                 ← Voltar aos Projetos
               </button>
+              <button 
+                  onClick={() => setIsPresenting(true)}
+                  style={{
+                  background: 'var(--bg-main)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '8px',
+                  padding: '8px 12px',
+                  color: 'var(--text-primary)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s',
+                  marginLeft: '8px'
+                  }}
+                  title="Apresentar (Tela Cheia)"
+              >
+                  <Play size={20} />
+              </button>
               <div style={{ marginRight: '8px' }}>
                 <button 
                     onClick={() => setIsExportModalOpen(true)}
@@ -914,6 +955,10 @@ IMPORTANTE: Não use markdown, não adicione explicações extras, apenas o JSON
               deleteElement={deleteElement}
               theme={activeTheme}
               font={activeFont}
+              onEditElement={(slideId, elementId) => {
+                setEditingElementInfo({ slideId, elementId });
+                setIsChartEditorOpen(true);
+              }}
             />
           </main>
 
@@ -944,6 +989,8 @@ IMPORTANTE: Não use markdown, não adicione explicações extras, apenas o JSON
         setSelectedModel={setSelectedModel}
         onSave={saveSettings}
         onResetDatabase={resetDatabase}
+        unsplashKey={unsplashKey}
+        setUnsplashKey={setUnsplashKey}
       />
 
       <AiModal
@@ -984,6 +1031,58 @@ IMPORTANTE: Não use markdown, não adicione explicações extras, apenas o JSON
         type={confirmModal.type}
         onConfirm={confirmModal.onConfirm}
         onCancel={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+      />
+
+      <AnimatePresence>
+        {isPresenting && (
+            <PresentationMode 
+                slides={slides}
+                activeTheme={activeTheme}
+                activeFont={activeFont}
+                initialSlideIndex={slides.findIndex(s => s.id === activeSlideId)}
+                onClose={() => setIsPresenting(false)}
+            />
+        )}
+      </AnimatePresence>
+
+      <ChartEditorModal 
+         isOpen={isChartEditorOpen}
+         onClose={() => setIsChartEditorOpen(false)}
+         initialData={
+            editingElementInfo 
+             ? slides.find(s => s.id === editingElementInfo.slideId)?.elements.find(e => e.id === editingElementInfo.elementId)?.chartData 
+             : []
+         }
+         chartType={
+             editingElementInfo 
+             ? slides.find(s => s.id === editingElementInfo.slideId)?.elements.find(e => e.id === editingElementInfo.elementId)?.chartType 
+             : 'bar'
+         }
+         onSave={(data, type) => {
+             if (editingElementInfo) {
+                 updateElement(editingElementInfo.slideId, editingElementInfo.elementId, { chartData: data, chartType: type });
+             }
+         }}
+      />
+
+      <ImagePickerModal
+          isOpen={isImagePickerOpen}
+          onClose={() => setIsImagePickerOpen(false)}
+          unsplashKey={unsplashKey}
+          onSelect={(url) => {
+              const newElement: any = {
+                id: `el-${Date.now()}`,
+                type: 'image',
+                content: url,
+                x: 300, y: 200, width: 400, height: 300
+              };
+               setSlides(prev => prev.map(s => {
+                    if (s.id === activeSlideId) {
+                      return { ...s, elements: [...s.elements, newElement] };
+                    }
+                    return s;
+               }));
+          }}
       />
     </div>
   );

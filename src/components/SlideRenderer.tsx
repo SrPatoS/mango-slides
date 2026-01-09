@@ -1,9 +1,11 @@
-import { Slide, SlideTheme } from "../types";
+import { Slide, SlideTheme, SlideFont } from "../types";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell, LineChart, Line, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 
 interface SlideRendererProps {
     slide: Slide;
     scale?: number;
     activeTheme?: SlideTheme;
+    activeFont?: SlideFont;
     width?: number;  // Largura base do slide (padrão 1000)
     height?: number; // Altura base do slide (padrão 600)
 }
@@ -12,6 +14,7 @@ export const SlideRenderer = ({
     slide, 
     scale = 1, 
     activeTheme = 'light',
+    activeFont = 'sans',
     width = 1000,
     height = 600
 }: SlideRendererProps) => {
@@ -38,8 +41,30 @@ export const SlideRenderer = ({
         }
     };
 
+    const getFontFamily = (font: SlideFont) => {
+        switch(font) {
+            case 'sans': return "'Inter', sans-serif";
+            case 'serif': return "'Merriweather', serif";
+            case 'mono': return "'Fira Code', monospace";
+            case 'display': return "'Outfit', sans-serif";
+            case 'handwritten': return "'Patrick Hand', cursive";
+            case 'times': return "'Times New Roman', serif";
+            default: return "'Inter', sans-serif";
+        }
+    };
+
     const themeBg = getThemeBackground(activeTheme);
     const themeText = getThemeTextColor(activeTheme);
+    const fontFamily = getFontFamily(activeFont);
+
+    // Paleta de cores simples para Pie Chart variantes
+    const getPieColors = (baseColor: string) => [
+        baseColor,
+        '#94a3b8',
+        '#cbd5e1', 
+        '#64748b',
+        '#475569'
+    ];
 
     return (
       <div style={{
@@ -48,7 +73,8 @@ export const SlideRenderer = ({
         position: 'relative',
         overflow: 'hidden',
         background: slide.backgroundColor || themeBg,
-        borderLeft: activeTheme === 'minimal' && scale < 0.5 ? '4px solid #0f172a' : 'none' // Borda visual só em thumbnails
+        borderLeft: activeTheme === 'minimal' && scale < 0.5 ? '4px solid #0f172a' : 'none',
+        fontFamily: fontFamily
       }}>
           {slide.elements.map(el => {
              let elColor = el.color;
@@ -65,7 +91,9 @@ export const SlideRenderer = ({
                     top: `${el.y * scale}px`,
                     width: el.width ? `${el.width * scale}px` : 'auto',
                     height: el.height ? `${el.height * scale}px` : 'auto',
-                    pointerEvents: 'none'
+                    backgroundColor: el.backgroundColor || 'transparent',
+                    pointerEvents: 'none', // Importante para drag & drop funcionar corretamente no editor (o container pai que lida)
+                    zIndex: el.type === 'chart' ? 10 : 1
                 }}
                 >
                 {el.type === 'text' && (
@@ -73,6 +101,7 @@ export const SlideRenderer = ({
                     fontSize: `${(el.fontSize || 24) * scale}px`,
                     fontWeight: el.fontWeight || 'normal',
                     fontStyle: el.fontStyle || 'normal',
+                    fontFamily: fontFamily, 
                     color: elColor,
                     textAlign: (el as any).textAlign || 'left',
                     whiteSpace: 'pre-wrap',
@@ -109,10 +138,56 @@ export const SlideRenderer = ({
                     }}
                     />
                 )}
+                {el.type === 'chart' && el.chartData && (
+                   <div style={{ width: '100%', height: '100%' }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                         {el.chartType === 'bar' ? (
+                             <BarChart data={el.chartData}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.3} stroke={themeText} />
+                                <XAxis dataKey="name" stroke={themeText} fontSize={10 * scale} tickLine={false} axisLine={{ stroke: themeText, opacity: 0.5 }} />
+                                <YAxis stroke={themeText} fontSize={10 * scale} tickLine={false} axisLine={{ stroke: themeText, opacity: 0.5 }} />
+                                <Tooltip cursor={{fill: 'rgba(255,255,255,0.1)'}} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', color: '#000' }} />
+                                <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                                <Bar dataKey="value" name="Valor" fill={el.color || '#8b5cf6'} radius={[4, 4, 0, 0]} animationDuration={1000} />
+                             </BarChart>
+                         ) : el.chartType === 'line' ? (
+                             <LineChart data={el.chartData}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.3} stroke={themeText} />
+                                <XAxis dataKey="name" stroke={themeText} fontSize={10 * scale} axisLine={{ stroke: themeText, opacity: 0.5 }} />
+                                <YAxis stroke={themeText} fontSize={10 * scale} axisLine={{ stroke: themeText, opacity: 0.5 }} />
+                                <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', color: '#000' }} />
+                                <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                                <Line type="monotone" dataKey="value" name="Valor" stroke={el.color || '#8b5cf6'} strokeWidth={3 * scale} dot={{r: 4 * scale, fill: el.color || '#8b5cf6'}} animationDuration={1000} />
+                             </LineChart>
+                         ) : (
+                             <PieChart>
+                                 <Pie 
+                                   data={el.chartData} 
+                                   dataKey="value" 
+                                   nameKey="name" 
+                                   cx="50%" 
+                                   cy="50%" 
+                                   outerRadius="80%" 
+                                   fill={el.color || "#8884d8"}
+                                   label={({name, percent}) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                                   labelLine={{ stroke: themeText }}
+                                   animationDuration={1000}
+                                   stroke="none"
+                                 >
+                                    {el.chartData.map((_entry, index) => (
+                                      <Cell key={`cell-${index}`} fill={getPieColors(el.color || '#8884d8')[index % 5]} />
+                                    ))}
+                                 </Pie>
+                                 <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', color: '#000' }} />
+                                 <Legend />
+                             </PieChart>
+                         )}
+                      </ResponsiveContainer>
+                   </div>
+                )}
                 </div>
             );
           })}
       </div>
     );
 };
-
