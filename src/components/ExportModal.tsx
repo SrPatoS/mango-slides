@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { X, Download, FileText, Presentation, ChevronDown } from "lucide-react";
+import { X, Download, ChevronDown } from "lucide-react";
 
 interface ExportModalProps {
   isOpen: boolean;

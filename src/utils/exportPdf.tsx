@@ -4,7 +4,7 @@ import { createRoot } from "react-dom/client";
 import { Slide, SlideTheme } from "../types";
 import { SlideRenderer } from "../components/SlideRenderer";
 
-import React from 'react';
+
 
 export const exportToPdf = async (slides: Slide[], activeTheme: SlideTheme, filename: string = "apresentacao.pdf") => {
   const pdf = new jsPDF({
