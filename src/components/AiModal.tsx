@@ -53,7 +53,7 @@ export const AiModal = ({
         <div className="settings-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <Sparkles size={20} className="sparkle-icon" />
-            <h2 style={{ fontSize: '1.2rem' }}>Gerar conteúdo com IA</h2>
+            <h2 style={{ fontSize: '1.2rem', color: 'var(--text-primary)' }}>Gerar conteúdo com IA</h2>
           </div>
           {!isGenerating && (
             <button className="close-btn" onClick={onClose}>

@@ -183,7 +183,7 @@ function App() {
       width: type === 'text' ? undefined : 150,
       height: type === 'text' ? undefined : 150,
       fontSize: type === 'text' ? 24 : undefined,
-      color: 'var(--accent)'
+      color: type === 'text' ? 'var(--theme-text)' : 'var(--accent)'
     };
     
     setSlides(prev => prev.map(s => {
@@ -345,8 +345,8 @@ function App() {
       />
       <header>
         <div className="logo-section">
-          <div className="logo-icon">SF</div>
-          <h1>SlideFlow</h1>
+          <div className="logo-icon">MS</div>
+          <h1>MangoSlides</h1>
         </div>
         <div className="header-actions">
           <button 

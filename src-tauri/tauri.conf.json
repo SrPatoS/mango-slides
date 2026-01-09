@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "tauri-app",
+  "productName": "MangoSlides",
   "version": "0.1.0",
   "identifier": "com.vinicius.tauri-app",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "SlideFlow Designer",
+        "title": "MangoSlides Designer",
         "width": 1200,
         "height": 800
       }

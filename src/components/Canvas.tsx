@@ -132,7 +132,7 @@ const ElementControls = ({
         position: 'absolute',
         zIndex: isSelected ? 100 : 10,
         padding: '4px',
-        border: isSelected ? '2px solid #8b5cf6' : '1px solid transparent',
+        border: isSelected ? '2px solid var(--accent)' : '1px solid transparent',
         borderRadius: '4px',
         boxSizing: 'border-box',
         display: 'flex',
@@ -154,7 +154,7 @@ const ElementControls = ({
                 left: -28, 
                 top: '50%', 
                 transform: 'translateY(-50%)',
-                color: '#8b5cf6',
+                color: 'var(--accent)',
                 cursor: 'grab',
                 backgroundColor: '#1e1e20',
                 borderRadius: '4px',
@@ -199,7 +199,7 @@ const ElementControls = ({
                     updateElement(activeSlideId, el.id, { fontWeight: el.fontWeight === 'bold' ? 'normal' : 'bold' }); 
                   }}
                   title="Negrito"
-                  style={{ background: 'none', border: 'none', color: el.fontWeight === 'bold' ? '#8b5cf6' : 'white', cursor: 'pointer', display: 'flex' }}
+                  style={{ background: 'none', border: 'none', color: el.fontWeight === 'bold' ? 'var(--accent)' : 'white', cursor: 'pointer', display: 'flex' }}
                 >
                   <Bold size={18} />
                 </button>
@@ -209,7 +209,7 @@ const ElementControls = ({
                     updateElement(activeSlideId, el.id, { fontStyle: el.fontStyle === 'italic' ? 'normal' : 'italic' }); 
                   }}
                   title="Itálico"
-                  style={{ background: 'none', border: 'none', color: el.fontStyle === 'italic' ? '#8b5cf6' : 'white', cursor: 'pointer', display: 'flex' }}
+                  style={{ background: 'none', border: 'none', color: el.fontStyle === 'italic' ? 'var(--accent)' : 'white', cursor: 'pointer', display: 'flex' }}
                 >
                   <Italic size={18} />
                 </button>
@@ -341,7 +341,7 @@ const ElementControls = ({
               bottom: -8,
               width: 14,
               height: 14,
-              backgroundColor: '#8b5cf6',
+              backgroundColor: 'var(--accent)',
               border: '3px solid white',
               borderRadius: '50%',
               cursor: 'nwse-resize',
