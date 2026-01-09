@@ -44,3 +44,4 @@ export interface AiGenerationConfig {
   numQuizQuestions: number;
   model: string;
 }
+
