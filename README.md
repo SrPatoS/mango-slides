@@ -16,8 +16,8 @@ O **Mango Slides** é uma ferramenta moderna para criação de apresentações d
 ## 📸 Capturas de Tela
 
 <div align="center">
-  <img src="images/1.png" alt="Editor de Slides" width="800" style="border-radius: 8px; margin-bottom: 20px;" />
-  <img src="images/2.png" alt="Modo Apresentação" width="800" style="border-radius: 8px;" />
+  <img src="images/1.png" alt="Editor de Slides" width="45%" style="border-radius: 8px; margin-right: 10px;" />
+  <img src="images/2.png" alt="Modo Apresentação" width="45%" style="border-radius: 8px;" />
 </div>
 
 ---
