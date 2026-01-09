@@ -26,10 +26,10 @@ export const LayersPanel = ({ activeSlide, selectedElementId, onSelectElement, o
         right: '24px',
         top: '80px',
         width: '280px',
-        backgroundColor: '#18181b',
-        border: '1px solid #27272a',
+        backgroundColor: 'var(--bg-sidebar)',
+        border: '1px solid var(--border)',
         borderRadius: '12px',
-        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
         zIndex: 1000,
         display: 'flex',
         flexDirection: 'column',
@@ -39,15 +39,15 @@ export const LayersPanel = ({ activeSlide, selectedElementId, onSelectElement, o
     >
       <div style={{
         padding: '16px',
-        borderBottom: '1px solid #27272a',
+        borderBottom: '1px solid var(--border)',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        background: 'rgba(255,255,255,0.02)'
+        background: 'rgba(var(--accent-rgb, 139, 92, 246), 0.03)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontWeight: 600, fontSize: '14px', color: 'white', letterSpacing: '0.02em' }}>Camadas</span>
-            <span style={{ fontSize: '11px', color: '#71717a', backgroundColor: '#27272a', padding: '2px 6px', borderRadius: '4px' }}>
+            <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)', letterSpacing: '0.02em' }}>Camadas</span>
+            <span style={{ fontSize: '11px', color: 'var(--text-secondary)', backgroundColor: 'var(--bg-main)', border: '1px solid var(--border)', padding: '2px 6px', borderRadius: '4px' }}>
                 {activeSlide.elements.length}
             </span>
         </div>
@@ -56,15 +56,15 @@ export const LayersPanel = ({ activeSlide, selectedElementId, onSelectElement, o
             style={{ 
                 background: 'none', 
                 border: 'none', 
-                color: '#71717a', 
+                color: 'var(--text-secondary)', 
                 cursor: 'pointer',
                 padding: '4px',
                 borderRadius: '4px',
                 display: 'flex',
                 transition: 'all 0.2s'
             }}
-            onMouseOver={(e) => e.currentTarget.style.color = 'white'}
-            onMouseOut={(e) => e.currentTarget.style.color = '#71717a'}
+            onMouseOver={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
+            onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
         >
           <X size={18} />
         </button>
@@ -72,7 +72,7 @@ export const LayersPanel = ({ activeSlide, selectedElementId, onSelectElement, o
 
       <div style={{ overflowY: 'auto', flex: 1, padding: '12px' }} className="custom-scrollbar">
         {elements.length === 0 ? (
-          <div style={{ padding: '40px 20px', textAlign: 'center', color: '#52525b', fontSize: '13px' }}>
+          <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '13px' }}>
             <div style={{ marginBottom: '12px', opacity: 0.5 }}>📭</div>
             Nenhum elemento neste slide
           </div>
@@ -93,21 +93,21 @@ export const LayersPanel = ({ activeSlide, selectedElementId, onSelectElement, o
                     gap: '12px',
                     padding: '10px 12px',
                     borderRadius: '8px',
-                    backgroundColor: isSelected ? 'rgba(139, 92, 246, 0.15)' : 'rgba(255,255,255,0.02)',
-                    border: isSelected ? '1px solid rgba(139, 92, 246, 0.4)' : '1px solid transparent',
+                    backgroundColor: isSelected ? 'rgba(var(--accent-rgb, 139, 92, 246), 0.15)' : 'rgba(var(--text-primary-rgb, 255,255,255), 0.02)',
+                    border: isSelected ? '1px solid var(--accent)' : '1px solid transparent',
                     cursor: 'pointer',
                     transition: 'all 0.2s',
                     position: 'relative'
                   }}
                   onMouseOver={(e) => {
-                    if (!isSelected) e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)';
+                    if (!isSelected) e.currentTarget.style.backgroundColor = 'rgba(var(--text-primary-rgb, 255,255,255), 0.05)';
                   }}
                   onMouseOut={(e) => {
-                    if (!isSelected) e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.02)';
+                    if (!isSelected) e.currentTarget.style.backgroundColor = 'rgba(var(--text-primary-rgb, 255,255,255), 0.02)';
                   }}
                 >
                   <div style={{ 
-                    color: isSelected ? '#a78bfa' : '#71717a',
+                    color: isSelected ? 'var(--accent)' : 'var(--text-secondary)',
                     display: 'flex'
                   }}>
                     {el.type === 'text' && <Type size={16} />}
@@ -121,7 +121,7 @@ export const LayersPanel = ({ activeSlide, selectedElementId, onSelectElement, o
                     textOverflow: 'ellipsis', 
                     whiteSpace: 'nowrap', 
                     fontSize: '13px', 
-                    color: isSelected ? 'white' : '#d4d4d8',
+                    color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)',
                     fontWeight: isSelected ? 500 : 400
                   }}>
                     {el.type === 'text' ? (el.content?.trim() || 'Texto sem conteúdo') : (el.type === 'rect' ? 'Retângulo' : 'Círculo')}
@@ -138,9 +138,9 @@ export const LayersPanel = ({ activeSlide, selectedElementId, onSelectElement, o
                       disabled={isFirst}
                       title="Mover para frente"
                       style={{ 
-                        background: isFirst ? 'transparent' : 'rgba(255,255,255,0.05)', 
+                        background: isFirst ? 'transparent' : 'rgba(var(--text-primary-rgb, 255,255,255), 0.05)', 
                         border: 'none', 
-                        color: isFirst ? '#27272a' : 'white', 
+                        color: isFirst ? 'var(--border)' : 'var(--text-primary)', 
                         cursor: isFirst ? 'default' : 'pointer', 
                         padding: '4px',
                         borderRadius: '4px',
@@ -154,9 +154,9 @@ export const LayersPanel = ({ activeSlide, selectedElementId, onSelectElement, o
                       disabled={isLast}
                       title="Mover para trás"
                       style={{ 
-                        background: isLast ? 'transparent' : 'rgba(255,255,255,0.05)', 
+                        background: isLast ? 'transparent' : 'rgba(var(--text-primary-rgb, 255,255,255), 0.05)', 
                         border: 'none', 
-                        color: isLast ? '#27272a' : 'white', 
+                        color: isLast ? 'var(--border)' : 'var(--text-primary)', 
                         cursor: isLast ? 'default' : 'pointer', 
                         padding: '4px',
                         borderRadius: '4px',
@@ -175,10 +175,10 @@ export const LayersPanel = ({ activeSlide, selectedElementId, onSelectElement, o
       
       <div style={{ 
         padding: '12px 16px', 
-        borderTop: '1px solid #27272a', 
-        backgroundColor: 'rgba(255,255,255,0.01)',
+        borderTop: '1px solid var(--border)', 
+        backgroundColor: 'rgba(var(--text-primary-rgb, 255,255,255), 0.01)',
         fontSize: '11px',
-        color: '#52525b',
+        color: 'var(--text-secondary)',
         textAlign: 'center'
       }}>
         Arraste elementos para mudar a ordem (Em breve)

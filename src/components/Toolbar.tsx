@@ -9,8 +9,8 @@ import {
   Sparkles, 
   Settings,
   Palette,
-  Type as FontIcon,
-  PaintBucket
+  PaintBucket,
+  ALargeSmall
 } from "lucide-react";
 import { SlideTheme, SlideFont, Slide } from "../types";
 
@@ -64,36 +64,39 @@ export const Toolbar = ({
   ];
 
   const tools = [
-    { id: 'select', icon: MousePointer2 },
-    { id: 'text', icon: Type, onClick: () => addElement('text') },
-    { id: 'image', icon: ImageIcon, onClick: () => addElement('image') },
-    { id: 'rect', icon: Square, onClick: () => addElement('rect') },
-    { id: 'circle', icon: Circle, onClick: () => addElement('circle') },
-    { id: 'bg-color', icon: PaintBucket, type: 'color' },
-    { id: 'layers', icon: Layers, onClick: onToggleLayers },
+    { id: 'select', icon: MousePointer2, title: 'Selecionar' },
+    { id: 'text', icon: Type, onClick: () => addElement('text'), title: 'Adicionar Texto' },
+    { id: 'image', icon: ImageIcon, onClick: () => addElement('image'), title: 'Adicionar Imagem' },
+    { id: 'rect', icon: Square, onClick: () => addElement('rect'), title: 'Adicionar Retângulo' },
+    { id: 'circle', icon: Circle, onClick: () => addElement('circle'), title: 'Adicionar Círculo' },
+    { id: 'bg-color', icon: PaintBucket, type: 'color', title: 'Cor do Fundo do Slide' },
+    { id: 'layers', icon: Layers, onClick: onToggleLayers, title: 'Camadas' },
     { 
       id: 'theme', 
       icon: Palette, 
       onClick: () => {
         setIsThemeOpen(!isThemeOpen);
         setIsFontOpen(false);
-      } 
+      },
+      title: 'Temas do Slide'
     },
     { 
       id: 'font', 
-      icon: FontIcon, 
+      icon: ALargeSmall, 
       onClick: () => {
         setIsFontOpen(!isFontOpen);
         setIsThemeOpen(false);
-      } 
+      },
+      title: 'Fonte Global'
     },
     { 
       id: 'ai', 
       icon: Sparkles, 
       className: 'ai-sparkle',
-      onClick: onOpenAiModal
+      onClick: onOpenAiModal,
+      title: 'Gerar com IA'
     },
-    { id: 'settings', icon: Settings, onClick: onOpenSettings },
+    { id: 'settings', icon: Settings, onClick: onOpenSettings, title: 'Configurações' },
   ];
 
   return (
@@ -110,7 +113,7 @@ export const Toolbar = ({
         >
           {tool.type === 'color' ? (
             <div className="tool-btn-container" style={{ position: 'relative' }}>
-                <button className="tool-btn">
+                <button className="tool-btn" title={tool.title}>
                     <tool.icon size={20} />
                 </button>
                 <input 
@@ -124,13 +127,14 @@ export const Toolbar = ({
                         width: '100%',
                         height: '100%'
                     }}
-                    title="Mudar cor do fundo do slide"
+                    title={tool.title}
                 />
             </div>
           ) : (
             <button 
               className={`tool-btn ${activeTool === tool.id ? 'active' : ''} ${tool.className || ''}`}
               onClick={tool.onClick ? tool.onClick : () => setActiveTool(tool.id)}
+              title={tool.title}
             >
               <tool.icon size={20} />
             </button>

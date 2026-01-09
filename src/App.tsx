@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import Database from "@tauri-apps/plugin-sql";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { Moon, Sun } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 
 // Components
@@ -49,6 +50,13 @@ function App() {
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
   const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
   const [isLayersOpen, setIsLayersOpen] = useState(false);
+  const [appTheme, setAppTheme] = useState<'light' | 'dark'>(() => {
+    return (localStorage.getItem('app-theme') as 'light' | 'dark') || 'dark';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('app-theme', appTheme);
+  }, [appTheme]);
 
   const activeSlide = slides.find((s) => s.id === activeSlideId) || slides[0];
 
@@ -283,13 +291,21 @@ function App() {
   };
 
   return (
-    <div className="app-container">
+    <div className={`app-container app-theme-${appTheme}`}>
       <header>
         <div className="logo-section">
           <div className="logo-icon">SF</div>
           <h1>SlideFlow</h1>
         </div>
         <div className="header-actions">
+          <button 
+            className="btn-secondary" 
+            onClick={() => setAppTheme(prev => prev === 'light' ? 'dark' : 'light')}
+            style={{ width: '40px', padding: '0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            title={`Alternar para modo ${appTheme === 'light' ? 'escuro' : 'claro'}`}
+          >
+            {appTheme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+          </button>
           <button className="btn-secondary">Exportar</button>
           <button className="btn-primary" onClick={() => setIsAiModalOpen(true)}>Apresentar</button>
         </div>
