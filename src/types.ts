@@ -17,6 +17,7 @@ export interface Slide {
   title: string;
   subtitle: string;
   elements: SlideElement[];
+  backgroundColor?: string;
 }
 
 export type ContentDensity = "bullets" | "low" | "medium" | "high";

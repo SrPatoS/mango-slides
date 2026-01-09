@@ -9,9 +9,10 @@ import {
   Sparkles, 
   Settings,
   Palette,
-  Type as FontIcon
+  Type as FontIcon,
+  PaintBucket
 } from "lucide-react";
-import { SlideTheme, SlideFont } from "../types";
+import { SlideTheme, SlideFont, Slide } from "../types";
 
 interface ToolbarProps {
   activeTool: string;
@@ -21,8 +22,11 @@ interface ToolbarProps {
   activeFont: SlideFont;
   setActiveFont: (font: SlideFont) => void;
   addElement: (type: 'text' | 'rect' | 'circle' | 'image') => void;
+  activeSlideId: string;
+  updateSlide: (id: string, updates: Partial<Slide>) => void;
   onOpenAiModal: () => void;
   onOpenSettings: () => void;
+  onToggleLayers: () => void;
 }
 
 export const Toolbar = ({ 
@@ -33,8 +37,11 @@ export const Toolbar = ({
   activeFont,
   setActiveFont,
   addElement,
+  activeSlideId,
+  updateSlide,
   onOpenAiModal, 
-  onOpenSettings 
+  onOpenSettings,
+  onToggleLayers
 }: ToolbarProps) => {
   const [isThemeOpen, setIsThemeOpen] = useState(false);
   const [isFontOpen, setIsFontOpen] = useState(false);
@@ -62,7 +69,8 @@ export const Toolbar = ({
     { id: 'image', icon: ImageIcon, onClick: () => addElement('image') },
     { id: 'rect', icon: Square, onClick: () => addElement('rect') },
     { id: 'circle', icon: Circle, onClick: () => addElement('circle') },
-    { id: 'layers', icon: Layers },
+    { id: 'bg-color', icon: PaintBucket, type: 'color' },
+    { id: 'layers', icon: Layers, onClick: onToggleLayers },
     { 
       id: 'theme', 
       icon: Palette, 
@@ -97,14 +105,36 @@ export const Toolbar = ({
             ${tool.id === 'ai' ? 'ai-generation-control' : ''} 
             ${tool.id === 'theme' ? 'theme-picker-container' : ''}
             ${tool.id === 'font' ? 'font-picker-container' : ''}
+            ${tool.id === 'bg-color' ? 'bg-color-picker-container' : ''}
           `}
         >
-          <button 
-            className={`tool-btn ${activeTool === tool.id ? 'active' : ''} ${tool.className || ''}`}
-            onClick={tool.onClick ? tool.onClick : () => setActiveTool(tool.id)}
-          >
-            <tool.icon size={20} />
-          </button>
+          {tool.type === 'color' ? (
+            <div className="tool-btn-container" style={{ position: 'relative' }}>
+                <button className="tool-btn">
+                    <tool.icon size={20} />
+                </button>
+                <input 
+                    type="color" 
+                    onChange={(e) => updateSlide(activeSlideId, { backgroundColor: e.target.value })}
+                    style={{
+                        position: 'absolute',
+                        inset: 0,
+                        opacity: 0,
+                        cursor: 'pointer',
+                        width: '100%',
+                        height: '100%'
+                    }}
+                    title="Mudar cor do fundo do slide"
+                />
+            </div>
+          ) : (
+            <button 
+              className={`tool-btn ${activeTool === tool.id ? 'active' : ''} ${tool.className || ''}`}
+              onClick={tool.onClick ? tool.onClick : () => setActiveTool(tool.id)}
+            >
+              <tool.icon size={20} />
+            </button>
+          )}
 
           {tool.id === 'theme' && isThemeOpen && (
             <div className="theme-dropdown">

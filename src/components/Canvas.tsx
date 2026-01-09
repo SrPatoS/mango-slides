@@ -1,6 +1,6 @@
 import { motion, useDragControls } from "framer-motion";
 import { Slide, SlideElement } from "../types";
-import { Trash2, Bold, Italic, GripVertical } from "lucide-react";
+import { Trash2, Bold, Italic, GripVertical, ArrowUp, ArrowDown } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 
 interface CanvasProps {
@@ -10,6 +10,7 @@ interface CanvasProps {
   setSelectedElementId: (id: string | null) => void;
   updateSlide: (id: string, updates: Partial<Slide>) => void;
   updateElement: (slideId: string, elementId: string, updates: Partial<any>) => void;
+  moveElement: (slideId: string, elementId: string, direction: 'forward' | 'backward' | 'front' | 'back') => void;
   deleteElement: (slideId: string, elementId: string) => void;
   theme: string;
   font: string;
@@ -71,6 +72,7 @@ const ElementControls = ({
   isSelected, 
   onSelect, 
   updateElement, 
+  moveElement,
   deleteElement 
 }: { 
   el: SlideElement, 
@@ -79,6 +81,7 @@ const ElementControls = ({
   isSelected: boolean, 
   onSelect: () => void,
   updateElement: any,
+  moveElement: any,
   deleteElement: any
 }) => {
   const dragControls = useDragControls();
@@ -181,6 +184,7 @@ const ElementControls = ({
                     e.stopPropagation(); 
                     updateElement(activeSlideId, el.id, { fontWeight: el.fontWeight === 'bold' ? 'normal' : 'bold' }); 
                   }}
+                  title="Negrito"
                   style={{ background: 'none', border: 'none', color: el.fontWeight === 'bold' ? '#8b5cf6' : 'white', cursor: 'pointer', display: 'flex' }}
                 >
                   <Bold size={18} />
@@ -190,6 +194,7 @@ const ElementControls = ({
                     e.stopPropagation(); 
                     updateElement(activeSlideId, el.id, { fontStyle: el.fontStyle === 'italic' ? 'normal' : 'italic' }); 
                   }}
+                  title="Itálico"
                   style={{ background: 'none', border: 'none', color: el.fontStyle === 'italic' ? '#8b5cf6' : 'white', cursor: 'pointer', display: 'flex' }}
                 >
                   <Italic size={18} />
@@ -229,11 +234,35 @@ const ElementControls = ({
                     />
                 </div>
             )}
+
+            <div style={{ width: '1px', height: '24px', backgroundColor: '#3f3f46' }} />
+            
+            {/* Layer Controls */}
+            <div style={{ display: 'flex', gap: '4px' }}>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); moveElement(activeSlideId, el.id, 'forward'); }}
+                  title="Trazer para frente"
+                  style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', padding: '4px' }}
+                >
+                  <ArrowUp size={18} />
+                </button>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); moveElement(activeSlideId, el.id, 'backward'); }}
+                  title="Enviar para trás"
+                  style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', padding: '4px' }}
+                >
+                  <ArrowDown size={18} />
+                </button>
+            </div>
+
+            <div style={{ width: '1px', height: '24px', backgroundColor: '#3f3f46' }} />
+
             <button 
               onClick={(e) => {
                 e.stopPropagation();
                 deleteElement(activeSlideId, el.id);
               }}
+              title="Excluir"
               style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex' }}
             >
               <Trash2 size={18} />
@@ -327,6 +356,7 @@ export const Canvas = ({
   selectedElementId,
   setSelectedElementId,
   updateElement, 
+  moveElement,
   deleteElement,
   theme, 
   font 
@@ -349,7 +379,10 @@ export const Canvas = ({
     <div 
       className={`slide-canvas theme-${theme} font-${font}`}
       onMouseDown={() => setSelectedElementId(null)}
-      style={{ overflow: 'visible' }}
+      style={{ 
+        overflow: 'visible',
+        backgroundColor: activeSlide.backgroundColor || 'var(--theme-bg, #ffffff)'
+      }}
     >
       {/* 1. VISUAL LAYER (CLIPPED) */}
       <div style={{ 
@@ -383,6 +416,7 @@ export const Canvas = ({
             isSelected={selectedElementId === el.id}
             onSelect={() => setSelectedElementId(el.id)}
             updateElement={updateElement}
+            moveElement={moveElement}
             deleteElement={deleteElement}
           />
         ))}

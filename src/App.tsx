@@ -11,6 +11,7 @@ import { Canvas } from "./components/Canvas";
 import { SettingsModal } from "./components/SettingsModal";
 import { AiModal } from "./components/AiModal";
 import { ErrorModal } from "./components/ErrorModal";
+import { LayersPanel } from "./components/LayersPanel";
 
 // Types
 import { Slide, SlideTheme, SlideFont } from "./types";
@@ -47,6 +48,7 @@ function App() {
   const [numQuizQuestions, setNumQuizQuestions] = useState(1);
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
   const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
+  const [isLayersOpen, setIsLayersOpen] = useState(false);
 
   const activeSlide = slides.find((s) => s.id === activeSlideId) || slides[0];
 
@@ -133,6 +135,27 @@ function App() {
         ...s,
         elements: s.elements.map(el => el.id === elementId ? { ...el, ...updates } : el)
       };
+    }));
+  };
+
+  const moveElement = (slideId: string, elementId: string, direction: 'forward' | 'backward' | 'front' | 'back') => {
+    setSlides(prev => prev.map(s => {
+      if (s.id !== slideId) return s;
+      const elements = [...s.elements];
+      const index = elements.findIndex(el => el.id === elementId);
+      if (index === -1) return s;
+
+      const element = elements.splice(index, 1)[0];
+      if (direction === 'forward') {
+        elements.splice(Math.min(index + 1, s.elements.length), 0, element);
+      } else if (direction === 'backward') {
+        elements.splice(Math.max(index - 1, 0), 0, element);
+      } else if (direction === 'front') {
+        elements.push(element);
+      } else if (direction === 'back') {
+        elements.unshift(element);
+      }
+      return { ...s, elements };
     }));
   };
 
@@ -288,11 +311,14 @@ function App() {
           setActiveTool={setActiveTool}
           activeTheme={activeTheme}
           setActiveTheme={setActiveTheme}
-            activeFont={activeFont}
-            setActiveFont={setActiveFont}
-            addElement={addElement}
-            onOpenAiModal={() => setIsAiModalOpen(true)}
+          activeFont={activeFont}
+          setActiveFont={setActiveFont}
+          addElement={addElement}
+          activeSlideId={activeSlideId}
+          updateSlide={updateSlide}
+          onOpenAiModal={() => setIsAiModalOpen(true)}
           onOpenSettings={() => setIsSettingsOpen(true)}
+          onToggleLayers={() => setIsLayersOpen(!isLayersOpen)}
         />
 
         <Canvas 
@@ -302,10 +328,23 @@ function App() {
           setSelectedElementId={setSelectedElementId}
           updateSlide={updateSlide}
           updateElement={updateElement}
+          moveElement={moveElement}
           deleteElement={deleteElement}
           theme={activeTheme}
           font={activeFont}
         />
+
+        <AnimatePresence>
+          {isLayersOpen && (
+            <LayersPanel 
+              activeSlide={activeSlide}
+              selectedElementId={selectedElementId}
+              onSelectElement={setSelectedElementId}
+              onMoveElement={moveElement}
+              onClose={() => setIsLayersOpen(false)}
+            />
+          )}
+        </AnimatePresence>
       </main>
 
       <AnimatePresence>
