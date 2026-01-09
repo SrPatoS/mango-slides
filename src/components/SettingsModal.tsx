@@ -13,6 +13,7 @@ interface SettingsModalProps {
   selectedModel: string;
   setSelectedModel: (model: string) => void;
   onResetDatabase?: () => void;
+  onSave: () => Promise<void>;
 }
 
 type SettingsTab = 'ai' | 'backup' | 'data' | 'about';
@@ -26,7 +27,8 @@ export const SettingsModal = ({
   setGeminiEnabled,
   selectedModel,
   setSelectedModel,
-  onResetDatabase
+  onResetDatabase,
+  onSave
 }: SettingsModalProps) => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('ai');
   
@@ -515,7 +517,7 @@ export const SettingsModal = ({
 
           {/* Footer */}
           <div className="settings-footer">
-            <button className="primary-button" onClick={onClose} style={{ width: '100%' }}>
+            <button className="primary-button" onClick={onSave} style={{ width: '100%' }}>
               Concluir
             </button>
           </div>

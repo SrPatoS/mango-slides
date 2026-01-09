@@ -842,6 +842,7 @@ IMPORTANTE: Não use markdown, não adicione explicações extras, apenas o JSON
           <Sidebar
             slides={slides}
             activeSlideId={activeSlideId}
+            activeTheme={activeTheme}
             onSlideSelect={setActiveSlideId}
             onAddSlide={addSlide}
             onDeleteSlide={deleteSlide}
@@ -881,13 +882,10 @@ IMPORTANTE: Não use markdown, não adicione explicações extras, apenas o JSON
           <AnimatePresence>
             {isLayersOpen && (
               <LayersPanel
-                elements={activeSlide.elements}
+                activeSlide={activeSlide}
                 selectedElementId={selectedElementId}
                 onSelectElement={setSelectedElementId}
-                onReorder={(fromIndex: number, toIndex: number) => {
-                  const direction = fromIndex < toIndex ? 'forward' : 'backward';
-                  moveElement(activeSlideId, activeSlide.elements[fromIndex].id, direction);
-                }}
+                onMoveElement={moveElement}
                 onClose={() => setIsLayersOpen(false)}
               />
             )}
