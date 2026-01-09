@@ -8,6 +8,8 @@ interface SidebarProps {
   setActiveSlideId: (id: string) => void;
   addSlide: () => void;
   deleteSlide: (id: string, e: React.MouseEvent) => void;
+  theme: string;
+  font: string;
 }
 
 export const Sidebar = ({ 
@@ -15,7 +17,9 @@ export const Sidebar = ({
   activeSlideId, 
   setActiveSlideId, 
   addSlide, 
-  deleteSlide 
+  deleteSlide,
+  theme,
+  font
 }: SidebarProps) => {
   return (
     <aside className="sidebar">
@@ -27,7 +31,7 @@ export const Sidebar = ({
         {slides.map((slide, index) => (
           <div 
             key={slide.id} 
-            className={`slide-thumb ${activeSlideId === slide.id ? "active" : ""}`}
+            className={`slide-thumb theme-${theme} font-${font} ${activeSlideId === slide.id ? "active" : ""}`}
             onClick={() => setActiveSlideId(slide.id)}
           >
             <span className="slide-thumb-number">{index + 1}</span>

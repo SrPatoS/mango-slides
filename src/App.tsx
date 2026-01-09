@@ -13,7 +13,7 @@ import { AiModal } from "./components/AiModal";
 import { ErrorModal } from "./components/ErrorModal";
 
 // Types
-import { Slide } from "./types";
+import { Slide, SlideTheme, SlideFont } from "./types";
 
 import "./App.css";
 
@@ -22,6 +22,8 @@ function App() {
     { id: "1", title: "Meu Primeiro Slide", subtitle: "Clique para editar este subtítulo..." },
   ]);
   const [activeSlideId, setActiveSlideId] = useState<string>("1");
+  const [activeTheme, setActiveTheme] = useState<SlideTheme>("light");
+  const [activeFont, setActiveFont] = useState<SlideFont>("sans");
   const [activeTool, setActiveTool] = useState<string>("select");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [geminiKey, setGeminiKey] = useState("");
@@ -204,12 +206,18 @@ function App() {
         setActiveSlideId={setActiveSlideId}
         addSlide={addSlide}
         deleteSlide={deleteSlide}
+        theme={activeTheme}
+        font={activeFont}
       />
 
       <main>
         <Toolbar 
           activeTool={activeTool}
           setActiveTool={setActiveTool}
+          activeTheme={activeTheme}
+          setActiveTheme={setActiveTheme}
+          activeFont={activeFont}
+          setActiveFont={setActiveFont}
           onOpenAiModal={() => setIsAiModalOpen(true)}
           onOpenSettings={() => setIsSettingsOpen(true)}
         />
@@ -217,6 +225,8 @@ function App() {
         <Canvas 
           activeSlide={activeSlide}
           updateSlide={updateSlide}
+          theme={activeTheme}
+          font={activeFont}
         />
       </main>
 

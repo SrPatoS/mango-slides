@@ -1,4 +1,3 @@
-import React from "react";
 import { X, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -159,7 +158,7 @@ export const AiModal = ({
               />
               
               <div className="prompt-hint">
-                Gerará capa, {numSlides} slides de conteúdo, 
+                Gerará uma capa, {numSlides} slides de conteúdo, 
                 {includeQuiz ? ` ${numQuizQuestions} questão(ões)` : ""} e encerramento.
               </div>
             </div>

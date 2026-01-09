@@ -1,14 +1,15 @@
-import React from "react";
 import { Slide } from "../types";
 
 interface CanvasProps {
   activeSlide: Slide;
   updateSlide: (id: string, updates: Partial<Slide>) => void;
+  theme: string;
+  font: string;
 }
 
-export const Canvas = ({ activeSlide, updateSlide }: CanvasProps) => {
+export const Canvas = ({ activeSlide, updateSlide, theme, font }: CanvasProps) => {
   return (
-    <div className="slide-canvas">
+    <div className={`slide-canvas theme-${theme} font-${font}`}>
       <div className="slide-content">
         <textarea 
           className="slide-title"
