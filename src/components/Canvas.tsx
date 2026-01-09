@@ -380,10 +380,12 @@ export const Canvas = ({
       className={`slide-canvas theme-${theme} font-${font}`}
       onMouseDown={() => setSelectedElementId(null)}
       style={{ 
-        overflow: 'visible',
-        backgroundColor: activeSlide.backgroundColor || 'var(--theme-bg, #ffffff)'
+        backgroundColor: activeSlide.backgroundColor || 'var(--theme-bg, #ffffff)', 
+        overflow: 'visible' 
       }}
     >
+      {/* Theme Background Decoration Layer */}
+      <div className="theme-backdrop" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }} />
       {/* 1. VISUAL LAYER (CLIPPED) */}
       <div style={{ 
         position: 'absolute', 
