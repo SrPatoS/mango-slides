@@ -100,8 +100,9 @@ export const ImagePickerModal = ({ isOpen, onClose, onSelect, unsplashKey }: Ima
             <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}><X size={24} /></button>
           </div>
 
-          <div className="search-bar" style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+          <div className="search-bar" style={{ display: 'flex', gap: '10px', marginBottom: '20px', width: '100%' }}>
               <div style={{ position: 'relative', flex: 1 }}>
+                  <Search size={20} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', pointerEvents: 'none' }} />
                   <input 
                      value={query} 
                      onChange={e => setQuery(e.target.value)} 
@@ -111,27 +112,35 @@ export const ImagePickerModal = ({ isOpen, onClose, onSelect, unsplashKey }: Ima
                          width: '100%',
                          padding: '12px 12px 12px 40px',
                          borderRadius: '8px',
-                         border: '1px solid var(--border)',
-                         background: 'var(--bg-main)',
-                         color: 'var(--text-primary)',
-                         fontSize: '1rem'
+                         border: '1px solid #3f3f46',
+                         background: '#18181b', // Dark background explicit
+                         color: '#f3f4f6', // Light text explicit
+                         fontSize: '1rem',
+                         outline: 'none',
+                         height: '48px',
+                         boxSizing: 'border-box'
                      }}
                      autoFocus
                   />
-                  <Search size={20} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
               </div>
               <button 
                 onClick={searchImages}
                 disabled={loading || !query}
-                className="primary-button"
                 style={{
                     padding: '0 24px',
+                    height: '48px',
                     borderRadius: '8px',
-                    fontWeight: 500,
-                    cursor: loading ? 'not-allowed' : 'pointer'
+                    fontWeight: 600,
+                    cursor: loading ? 'not-allowed' : 'pointer',
+                    background: 'var(--accent)',
+                    color: 'white',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                 }}
               >
-                  {loading ? 'Buscando...' : 'Buscar'}
+                  {loading ? '...' : 'Buscar'}
               </button>
           </div>
 
