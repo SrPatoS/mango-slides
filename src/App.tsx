@@ -207,8 +207,8 @@ function App() {
         title: "Meu Primeiro Slide", 
         subtitle: "Clique para editar este subtítulo...",
         elements: [
-          { id: 'el-1', type: 'text', content: 'Meu Primeiro Slide', x: 60, y: 150, fontSize: 48, color: 'var(--theme-text)' },
-          { id: 'el-2', type: 'text', content: 'Clique para editar este subtítulo...', x: 60, y: 250, fontSize: 24, color: 'var(--theme-text)' }
+          { id: 'el-1', type: 'text', content: 'Meu Primeiro Slide', x: 60, y: 150, width: 880, fontSize: 48, color: 'var(--theme-text)' },
+          { id: 'el-2', type: 'text', content: 'Clique para editar este subtítulo...', x: 60, y: 250, width: 880, fontSize: 24, color: 'var(--theme-text)' }
         ]
       }
     ];
@@ -297,18 +297,37 @@ function App() {
   const addSlide = () => {
     setSlides(prev => {
       const newId = (prev.length + 1).toString();
+      const maxWidth = 880; // Largura máxima com margens dos dois lados
+      
       const newSlide: Slide = { 
         id: newId, 
         title: "Novo Slide", 
-        subtitle: "Conteúdo do novo slide",
+        subtitle: "Clique para editar o conteúdo...",
         elements: [
-          { id: `el-${Date.now()}-1`, type: 'text', content: 'Novo Slide', x: 100, y: 100, fontSize: 48 },
-          { id: `el-${Date.now()}-2`, type: 'text', content: 'Conteúdo do novo slide', x: 100, y: 200, fontSize: 24 }
+          { 
+            id: `el-${Date.now()}-1`, 
+            type: 'text', 
+            content: 'Novo Slide', 
+            x: 60, 
+            y: 100, 
+            width: maxWidth,
+            fontSize: 48,
+            color: 'var(--theme-text)'
+          },
+          { 
+            id: `el-${Date.now()}-2`, 
+            type: 'text', 
+            content: 'Clique para editar o conteúdo...', 
+            x: 60, 
+            y: 220,
+            width: maxWidth,
+            fontSize: 24,
+            color: 'var(--theme-text)'
+          }
         ]
       };
       return [...prev, newSlide];
     });
-    // We can't easily get the new ID here without more changes, but (slides.length + 1) is usually fine for UI focus
     setActiveSlideId((slides.length + 1).toString());
   };
 

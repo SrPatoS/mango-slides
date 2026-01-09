@@ -1,6 +1,6 @@
 import { motion, useDragControls } from "framer-motion";
 import { Slide, SlideElement } from "../types";
-import { Trash2, Bold, Italic, GripVertical, ArrowUp, ArrowDown, ImageUp } from "lucide-react";
+import { Trash2, Bold, Italic, GripVertical, ArrowUp, ArrowDown, ImageUp, AlignLeft, AlignCenter, AlignRight, AlignJustify } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 
 interface CanvasProps {
@@ -212,6 +212,72 @@ const ElementControls = ({
                   style={{ background: 'none', border: 'none', color: el.fontStyle === 'italic' ? 'var(--accent)' : 'white', cursor: 'pointer', display: 'flex' }}
                 >
                   <Italic size={18} />
+                </button>
+                <div style={{ width: '1px', height: '24px', backgroundColor: '#3f3f46' }} />
+                {/* Text Alignment */}
+                <button 
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    updateElement(activeSlideId, el.id, { textAlign: 'left' }); 
+                  }}
+                  title="Alinhar à esquerda"
+                  style={{ 
+                    background: 'none', 
+                    border: 'none', 
+                    color: (el as any).textAlign === 'left' || !(el as any).textAlign ? 'var(--accent)' : 'white', 
+                    cursor: 'pointer', 
+                    display: 'flex' 
+                  }}
+                >
+                  <AlignLeft size={18} />
+                </button>
+                <button 
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    updateElement(activeSlideId, el.id, { textAlign: 'center' }); 
+                  }}
+                  title="Centralizar"
+                  style={{ 
+                    background: 'none', 
+                    border: 'none', 
+                    color: (el as any).textAlign === 'center' ? 'var(--accent)' : 'white', 
+                    cursor: 'pointer', 
+                    display: 'flex' 
+                  }}
+                >
+                  <AlignCenter size={18} />
+                </button>
+                <button 
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    updateElement(activeSlideId, el.id, { textAlign: 'right' }); 
+                  }}
+                  title="Alinhar à direita"
+                  style={{ 
+                    background: 'none', 
+                    border: 'none', 
+                    color: (el as any).textAlign === 'right' ? 'var(--accent)' : 'white', 
+                    cursor: 'pointer', 
+                    display: 'flex' 
+                  }}
+                >
+                  <AlignRight size={18} />
+                </button>
+                <button 
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    updateElement(activeSlideId, el.id, { textAlign: 'justify' }); 
+                  }}
+                  title="Justificar"
+                  style={{ 
+                    background: 'none', 
+                    border: 'none', 
+                    color: (el as any).textAlign === 'justify' ? 'var(--accent)' : 'white', 
+                    cursor: 'pointer', 
+                    display: 'flex' 
+                  }}
+                >
+                  <AlignJustify size={18} />
                 </button>
                 <div style={{ width: '1px', height: '24px', backgroundColor: '#3f3f46' }} />
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
