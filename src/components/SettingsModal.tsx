@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Cpu, Database, Info, Trash2, AlertTriangle, Download, Upload } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PasswordModal } from "./PasswordModal";
@@ -31,6 +31,27 @@ export const SettingsModal = ({
   onSave
 }: SettingsModalProps) => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('ai');
+  const [appInfo, setAppInfo] = useState({ name: 'MangoSlides Designer', version: 'Loading...' });
+
+  useEffect(() => {
+    if (activeTab === 'about') {
+      import('@tauri-apps/api/app').then(async (app) => {
+        try {
+          const name = await app.getName();
+          const version = await app.getVersion();
+          // Capitalize Name if needed or use as is. Tauri typically returns package name.
+          // Let's format it nicer if it matches the default 'tauri-app' or similar, 
+          // otherwise trust the API.
+          setAppInfo({ 
+             name: name === 'tauri-app' ? 'MangoSlides Designer' : name, 
+             version 
+          });
+        } catch (err) {
+          console.error('Failed to get app info', err);
+        }
+      });
+    }
+  }, [activeTab]);
   
   // Password Modal State
   const [passwordModal, setPasswordModal] = useState<{
@@ -496,8 +517,8 @@ export const SettingsModal = ({
                         <div className="app-logo">
                           <div className="logo-icon-large">MS</div>
                         </div>
-                        <h4>MangoSlides Designer</h4>
-                        <p className="version">Versão 1.0.0</p>
+                        <h4>{appInfo.name}</h4>
+                        <p className="version">Versão {appInfo.version}</p>
                         <p className="description">
                           Editor de apresentações moderno com geração de conteúdo por IA.
                         </p>
