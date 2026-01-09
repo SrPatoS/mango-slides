@@ -1,5 +1,5 @@
 use magic_crypt::{new_magic_crypt, MagicCryptTrait};
-use tauri::{command, Runtime};
+use tauri::command;
 
 // Chave de criptografia "mestre" (em um app real, isso poderia ser derivado do hardware)
 const MASTER_KEY: &str = "slideflow-secret-pepper-2024";
