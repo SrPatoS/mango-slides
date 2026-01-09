@@ -271,15 +271,13 @@ main {
 .slide-title {
   font-size: 3rem;
   font-weight: 800;
-  margin-bottom: 20px;
   outline: none;
   background: transparent;
   border: none;
-  width: 100%;
-  text-align: center;
   color: inherit;
   resize: none;
   font-family: inherit;
+  overflow: hidden;
 }
 
 .slide-subtitle {
@@ -289,10 +287,9 @@ main {
   outline: none;
   background: transparent;
   border: none;
-  width: 100%;
-  text-align: center;
   resize: none;
   font-family: inherit;
+  overflow: hidden;
 }
 
 .btn-primary {

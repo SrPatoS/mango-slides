@@ -1,7 +1,22 @@
+export interface SlideElement {
+  id: string;
+  type: 'text' | 'image' | 'rect' | 'circle';
+  content: string;
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+  color?: string;
+  fontSize?: number;
+  fontWeight?: string | number;
+  fontStyle?: string;
+}
+
 export interface Slide {
   id: string;
   title: string;
   subtitle: string;
+  elements: SlideElement[];
 }
 
 export type ContentDensity = "bullets" | "low" | "medium" | "high";

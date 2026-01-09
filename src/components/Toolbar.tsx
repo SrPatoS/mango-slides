@@ -20,6 +20,7 @@ interface ToolbarProps {
   setActiveTheme: (theme: SlideTheme) => void;
   activeFont: SlideFont;
   setActiveFont: (font: SlideFont) => void;
+  addElement: (type: 'text' | 'rect' | 'circle' | 'image') => void;
   onOpenAiModal: () => void;
   onOpenSettings: () => void;
 }
@@ -31,6 +32,7 @@ export const Toolbar = ({
   setActiveTheme,
   activeFont,
   setActiveFont,
+  addElement,
   onOpenAiModal, 
   onOpenSettings 
 }: ToolbarProps) => {
@@ -56,10 +58,10 @@ export const Toolbar = ({
 
   const tools = [
     { id: 'select', icon: MousePointer2 },
-    { id: 'text', icon: Type },
-    { id: 'image', icon: ImageIcon },
-    { id: 'rect', icon: Square },
-    { id: 'circle', icon: Circle },
+    { id: 'text', icon: Type, onClick: () => addElement('text') },
+    { id: 'image', icon: ImageIcon, onClick: () => addElement('image') },
+    { id: 'rect', icon: Square, onClick: () => addElement('rect') },
+    { id: 'circle', icon: Circle, onClick: () => addElement('circle') },
     { id: 'layers', icon: Layers },
     { 
       id: 'theme', 

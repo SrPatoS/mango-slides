@@ -19,9 +19,18 @@ import "./App.css";
 
 function App() {
   const [slides, setSlides] = useState<Slide[]>([
-    { id: "1", title: "Meu Primeiro Slide", subtitle: "Clique para editar este subtítulo..." },
+    { 
+      id: "1", 
+      title: "Meu Primeiro Slide", 
+      subtitle: "Clique para editar este subtítulo...",
+      elements: [
+        { id: 'el-1', type: 'text', content: 'Meu Primeiro Slide', x: 100, y: 100, fontSize: 48 },
+        { id: 'el-2', type: 'text', content: 'Clique para editar este subtítulo...', x: 100, y: 200, fontSize: 24 }
+      ]
+    },
   ]);
   const [activeSlideId, setActiveSlideId] = useState<string>("1");
+  const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const [activeTheme, setActiveTheme] = useState<SlideTheme>("light");
   const [activeFont, setActiveFont] = useState<SlideFont>("sans");
   const [activeTool, setActiveTool] = useState<string>("select");
@@ -77,28 +86,84 @@ function App() {
   }, []);
 
   const addSlide = () => {
-    const newId = (slides.length + 1).toString();
-    const newSlide = { id: newId, title: "Novo Slide", subtitle: "Conteúdo do novo slide" };
-    setSlides([...slides, newSlide]);
-    setActiveSlideId(newId);
+    setSlides(prev => {
+      const newId = (prev.length + 1).toString();
+      const newSlide: Slide = { 
+        id: newId, 
+        title: "Novo Slide", 
+        subtitle: "Conteúdo do novo slide",
+        elements: [
+          { id: `el-${Date.now()}-1`, type: 'text', content: 'Novo Slide', x: 100, y: 100, fontSize: 48 },
+          { id: `el-${Date.now()}-2`, type: 'text', content: 'Conteúdo do novo slide', x: 100, y: 200, fontSize: 24 }
+        ]
+      };
+      return [...prev, newSlide];
+    });
+    // We can't easily get the new ID here without more changes, but (slides.length + 1) is usually fine for UI focus
+    setActiveSlideId((slides.length + 1).toString());
   };
 
   const deleteSlide = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (slides.length <= 1) return;
-
-    const newSlides = slides.filter(s => s.id !== id);
-    setSlides(newSlides);
-
-    if (activeSlideId === id) {
-      const currentIndex = slides.findIndex(s => s.id === id);
-      const nextActiveIndex = currentIndex > 0 ? currentIndex - 1 : 0;
-      setActiveSlideId(newSlides[nextActiveIndex].id);
-    }
+    setSlides(prev => {
+      if (prev.length <= 1) return prev; // Prevent deleting the last slide
+      const filtered = prev.filter((s) => s.id !== id);
+      if (activeSlideId === id && filtered.length > 0) {
+        // Find the index of the deleted slide in the original array
+        const currentIndex = prev.findIndex(s => s.id === id);
+        // Determine the next active slide: if not the first, then the one before; otherwise, the new first
+        const nextActiveIndex = currentIndex > 0 ? currentIndex - 1 : 0;
+        setActiveSlideId(filtered[nextActiveIndex].id);
+      } else if (filtered.length === 0) {
+        // This case should ideally not happen if we prevent deleting the last slide
+        setActiveSlideId(""); // Or handle as appropriate for an empty state
+      }
+      return filtered;
+    });
   };
 
   const updateSlide = (id: string, updates: Partial<Slide>) => {
-    setSlides(slides.map((s) => (s.id === id ? { ...s, ...updates } : s)));
+    setSlides(prev => prev.map((s) => (s.id === id ? { ...s, ...updates } : s)));
+  };
+
+  const updateElement = (slideId: string, elementId: string, updates: Partial<any>) => {
+    setSlides(prev => prev.map(s => {
+      if (s.id !== slideId) return s;
+      return {
+        ...s,
+        elements: s.elements.map(el => el.id === elementId ? { ...el, ...updates } : el)
+      };
+    }));
+  };
+
+  const addElement = (type: 'text' | 'rect' | 'circle' | 'image') => {
+    const newElement: any = {
+      id: `el-${Date.now()}`,
+      type,
+      content: type === 'text' ? 'Novo Texto' : '',
+      x: 300,
+      y: 200,
+      width: type === 'text' ? undefined : 150,
+      height: type === 'text' ? undefined : 150,
+      fontSize: type === 'text' ? 24 : undefined,
+      color: 'var(--accent)'
+    };
+
+    setSlides(prev => prev.map(s => {
+      if (s.id !== activeSlideId) return s;
+      return { ...s, elements: [...s.elements, newElement] };
+    }));
+  };
+
+  const deleteElement = (slideId: string, elementId: string) => {
+    setSlides(prev => prev.map(s => {
+      if (s.id !== slideId) return s;
+      return {
+        ...s,
+        elements: s.elements.filter(el => el.id !== elementId)
+      };
+    }));
+    if (selectedElementId === elementId) setSelectedElementId(null);
   };
 
   const saveSettings = async () => {
@@ -166,11 +231,18 @@ function App() {
       const slidesData = JSON.parse(jsonStr);
 
       if (Array.isArray(slidesData)) {
-        const newSlides: Slide[] = slidesData.map((s, i) => ({
-          id: Date.now() + i + "",
-          title: s.title || "Sem título",
-          subtitle: s.subtitle || ""
-        }));
+        const newSlides: Slide[] = slidesData.map((s, i) => {
+          const slideId = Date.now() + i + "";
+          return {
+            id: slideId,
+            title: s.title || "Sem título",
+            subtitle: s.subtitle || "",
+            elements: [
+              { id: `el-${slideId}-t`, type: 'text', content: s.title || "Sem título", x: 100, y: 100, fontSize: 48 },
+              { id: `el-${slideId}-s`, type: 'text', content: s.subtitle || "", x: 100, y: 200, fontSize: 24 }
+            ]
+          };
+        });
 
         setSlides([...slides, ...newSlides]);
         setActiveSlideId(newSlides[0].id);
@@ -216,15 +288,21 @@ function App() {
           setActiveTool={setActiveTool}
           activeTheme={activeTheme}
           setActiveTheme={setActiveTheme}
-          activeFont={activeFont}
-          setActiveFont={setActiveFont}
-          onOpenAiModal={() => setIsAiModalOpen(true)}
+            activeFont={activeFont}
+            setActiveFont={setActiveFont}
+            addElement={addElement}
+            onOpenAiModal={() => setIsAiModalOpen(true)}
           onOpenSettings={() => setIsSettingsOpen(true)}
         />
 
         <Canvas 
           activeSlide={activeSlide}
+          activeTool={activeTool}
+          selectedElementId={selectedElementId}
+          setSelectedElementId={setSelectedElementId}
           updateSlide={updateSlide}
+          updateElement={updateElement}
+          deleteElement={deleteElement}
           theme={activeTheme}
           font={activeFont}
         />
