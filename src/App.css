@@ -218,7 +218,7 @@ main {
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
-  overflow: hidden;
+  overflow: visible;
   font-family: var(--slide-font, 'Inter', sans-serif);
 }
 

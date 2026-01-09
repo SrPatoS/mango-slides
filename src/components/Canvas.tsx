@@ -15,7 +15,56 @@ interface CanvasProps {
   font: string;
 }
 
-const DraggableElement = ({ 
+// Sub-component for each element's visual part (clipped)
+const ElementVisual = ({ el }: { el: SlideElement }) => {
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: el.x,
+        top: el.y,
+        width: el.width || 'auto',
+        height: el.height || 'auto',
+        padding: '4px',
+        boxSizing: 'border-box',
+        display: 'flex',
+        pointerEvents: 'none'
+      }}
+    >
+      {el.type === 'text' && (
+        <div style={{
+          fontSize: el.fontSize ? `${el.fontSize}px` : 'inherit',
+          fontWeight: el.fontWeight || 'normal',
+          fontStyle: el.fontStyle || 'normal',
+          width: '100%',
+          height: '100%',
+          textAlign: 'left',
+          padding: '10px',
+          color: el.color || 'inherit',
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-word',
+          lineHeight: 1.2,
+          fontFamily: 'inherit'
+        }}>
+          {el.content}
+        </div>
+      )}
+
+      {(el.type === 'rect' || el.type === 'circle') && (
+        <div style={{ 
+          width: '100%', 
+          height: '100%', 
+          backgroundColor: el.color || '#8b5cf6',
+          borderRadius: el.type === 'circle' ? '50%' : '8px',
+          transition: 'background-color 0.2s ease'
+        }} />
+      )}
+    </div>
+  );
+};
+
+// Sub-component for each element's interaction part (not clipped)
+const ElementControls = ({ 
   el, 
   activeSlideId,
   activeTool, 
@@ -35,6 +84,7 @@ const DraggableElement = ({
   const dragControls = useDragControls();
   const [isResizing, setIsResizing] = useState(false);
   const elementRef = useRef<HTMLDivElement>(null);
+  const isNearTop = el.y < 80;
 
   return (
     <motion.div
@@ -63,17 +113,20 @@ const DraggableElement = ({
       transition={{ duration: 0 }}
       style={{ 
         position: 'absolute',
-        zIndex: isSelected ? 20 : 10,
+        zIndex: isSelected ? 100 : 10,
         padding: '4px',
         border: isSelected ? '2px solid #8b5cf6' : '1px solid transparent',
         borderRadius: '4px',
         boxSizing: 'border-box',
         display: 'flex',
-        cursor: activeTool === 'select' ? 'default' : 'text'
+        cursor: activeTool === 'select' ? (isSelected ? 'default' : 'grab') : 'text',
+        pointerEvents: 'auto'
       }}
     >
+      {/* Property Bar & Handles - Visible outside clip */}
       {isSelected && activeTool === 'select' && (
         <>
+          {/* Drag Handle */}
           <div 
             onPointerDown={(e) => {
                 e.stopPropagation();
@@ -90,17 +143,22 @@ const DraggableElement = ({
                 borderRadius: '4px',
                 padding: '4px',
                 display: 'flex',
-                border: '1px solid #3f3f46'
+                border: '1px solid #3f3f46',
+                boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
             }}
           >
             <GripVertical size={16} />
           </div>
 
+          {/* Property Bar */}
           <div 
             onMouseDown={(e) => e.stopPropagation()}
             style={{
               position: 'absolute',
-              top: -65,
+              ...(isNearTop 
+                ? { top: '100%', marginTop: '15px' } 
+                : { bottom: '100%', marginBottom: '15px' }
+              ),
               left: '50%',
               transform: 'translateX(-50%)',
               backgroundColor: '#1e1e20',
@@ -111,10 +169,12 @@ const DraggableElement = ({
               gap: '12px',
               alignItems: 'center',
               boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
-              zIndex: 100,
+              zIndex: 1000,
+              pointerEvents: 'auto',
+              whiteSpace: 'nowrap'
             }}
           >
-            {el.type === 'text' && (
+            {el.type === 'text' ? (
               <>
                 <button 
                   onClick={(e) => { 
@@ -136,6 +196,17 @@ const DraggableElement = ({
                 </button>
                 <div style={{ width: '1px', height: '24px', backgroundColor: '#3f3f46' }} />
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontSize: '11px', color: '#a1a1aa' }}>Cor</span>
+                    <input 
+                        type="color" 
+                        value={el.color || '#ffffff'} 
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onChange={(e) => updateElement(activeSlideId, el.id, { color: e.target.value })}
+                        style={{ width: '24px', height: '24px', background: 'none', border: '1px solid #3f3f46', cursor: 'pointer', padding: 0, borderRadius: '4px' }}
+                    />
+                </div>
+                <div style={{ width: '1px', height: '24px', backgroundColor: '#3f3f46' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span style={{ fontSize: '11px', color: '#a1a1aa' }}>Tam.</span>
                     <input 
                         type="number" 
@@ -146,6 +217,17 @@ const DraggableElement = ({
                     />
                 </div>
               </>
+            ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontSize: '11px', color: '#a1a1aa' }}>Cor do Fundo</span>
+                    <input 
+                        type="color" 
+                        value={el.color || '#8b5cf6'} 
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onChange={(e) => updateElement(activeSlideId, el.id, { color: e.target.value })}
+                        style={{ width: '24px', height: '24px', background: 'none', border: '1px solid #3f3f46', cursor: 'pointer', padding: 0, borderRadius: '4px' }}
+                    />
+                </div>
             )}
             <button 
               onClick={(e) => {
@@ -158,16 +240,14 @@ const DraggableElement = ({
             </button>
           </div>
 
+          {/* Resize Handle */}
           <div 
             onMouseDown={(e) => {
               e.stopPropagation();
               e.preventDefault();
               setIsResizing(true);
-              
               const startX = e.clientX;
               const startY = e.clientY;
-              
-              // Key fix: use actual rendered size if state width/height are auto
               const currentRect = elementRef.current?.getBoundingClientRect();
               const startWidth = currentRect ? currentRect.width : (el.width || 150);
               const startHeight = currentRect ? currentRect.height : (el.height || 100);
@@ -183,7 +263,6 @@ const DraggableElement = ({
                 document.removeEventListener('mousemove', onMouseMove);
                 document.removeEventListener('mouseup', onMouseUp);
               };
-
               document.addEventListener('mousemove', onMouseMove);
               document.addEventListener('mouseup', onMouseUp);
             }}
@@ -204,6 +283,7 @@ const DraggableElement = ({
         </>
       )}
 
+      {/* Editable Area (only for text and only when selected/clicking) */}
       {el.type === 'text' && (
         <textarea
           className={el.fontSize && el.fontSize > 30 ? "slide-title" : "slide-subtitle"}
@@ -211,7 +291,7 @@ const DraggableElement = ({
           onChange={(e) => updateElement(activeSlideId, el.id, { content: e.target.value })}
           onMouseDown={(e) => {
             if (activeTool === 'select' && isSelected) {
-                e.stopPropagation();
+              e.stopPropagation();
             }
           }}
           style={{ 
@@ -229,21 +309,13 @@ const DraggableElement = ({
             resize: 'none',
             cursor: activeTool === 'select' ? (isSelected ? 'text' : 'grab') : 'text',
             pointerEvents: activeTool === 'select' && !isSelected ? 'none' : 'auto',
-            color: 'inherit',
+            color: 'transparent', // Text is rendered by Visual layer
+            caretColor: el.color || '#ffffff',
             fontFamily: 'inherit',
-            minHeight: '1.2em'
+            position: 'relative',
+            zIndex: 1
           }}
         />
-      )}
-
-      {(el.type === 'rect' || el.type === 'circle') && (
-        <div style={{ 
-          width: '100%', 
-          height: '100%', 
-          backgroundColor: el.color || '#8b5cf6',
-          borderRadius: el.type === 'circle' ? '50%' : '8px',
-          pointerEvents: 'none'
-        }} />
       )}
     </motion.div>
   );
@@ -269,7 +341,6 @@ export const Canvas = ({
         deleteElement(activeSlide.id, selectedElementId);
       }
     };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedElementId, activeSlide.id, deleteElement]);
@@ -278,11 +349,33 @@ export const Canvas = ({
     <div 
       className={`slide-canvas theme-${theme} font-${font}`}
       onMouseDown={() => setSelectedElementId(null)}
-      style={{ overflow: 'hidden' }}
+      style={{ overflow: 'visible' }}
     >
-      <div className="slide-content-area" style={{ position: 'relative', width: '100%', height: '100%' }}>
-        {activeSlide.elements.map((el: SlideElement) => (
-          <DraggableElement 
+      {/* 1. VISUAL LAYER (CLIPPED) */}
+      <div style={{ 
+        position: 'absolute', 
+        inset: 0, 
+        overflow: 'hidden', 
+        borderRadius: '4px',
+        pointerEvents: 'none',
+        zIndex: 5
+      }}>
+        <div className="slide-content-area" style={{ position: 'relative', width: '100%', height: '100%' }}>
+          {activeSlide.elements.map((el) => (
+            <ElementVisual key={el.id} el={el} />
+          ))}
+        </div>
+      </div>
+
+      {/* 2. INTERACTION LAYER (NOT CLIPPED) */}
+      <div style={{ 
+        position: 'absolute', 
+        inset: 0, 
+        zIndex: 10,
+        pointerEvents: 'none'
+      }}>
+        {activeSlide.elements.map((el) => (
+          <ElementControls 
             key={el.id}
             el={el}
             activeSlideId={activeSlide.id}
