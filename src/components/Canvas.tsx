@@ -380,7 +380,7 @@ export const Canvas = ({
       className={`slide-canvas theme-${theme} font-${font}`}
       onMouseDown={() => setSelectedElementId(null)}
       style={{ 
-        backgroundColor: activeSlide.backgroundColor || 'var(--theme-bg, #ffffff)', 
+        background: activeSlide.backgroundColor || 'var(--theme-bg, #ffffff)', 
         overflow: 'visible' 
       }}
     >

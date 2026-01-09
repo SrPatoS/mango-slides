@@ -47,11 +47,11 @@ export const Toolbar = ({
   const [isFontOpen, setIsFontOpen] = useState(false);
 
   const themes: { id: SlideTheme; name: string; preview: string }[] = [
-    { id: 'light', name: 'Claro', preview: '#ffffff' },
-    { id: 'dark', name: 'Escuro', preview: '#18181b' },
-    { id: 'corporate', name: 'Executivo', preview: 'linear-gradient(135deg, #1e3a8a, #1e40af)' },
-    { id: 'purple', name: 'Criativo', preview: 'linear-gradient(135deg, #4c1d95, #6d28d9)' },
-    { id: 'minimal', name: 'Mínimo', preview: '#f4f4f5' },
+    { id: 'light', name: 'Claro', preview: '#f8fafc' },
+    { id: 'dark', name: 'Escuro', preview: '#0f172a' },
+    { id: 'corporate', name: 'Executivo', preview: 'linear-gradient(135deg, #1e293b, #0f172a)' },
+    { id: 'purple', name: 'Criativo', preview: 'linear-gradient(135deg, #4c1d95, #1e1b4b)' },
+    { id: 'minimal', name: 'Mínimo', preview: '#ffffff' },
   ];
 
   const fonts: { id: SlideFont; name: string; preview: string }[] = [
