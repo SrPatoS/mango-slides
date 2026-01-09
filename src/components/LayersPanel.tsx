@@ -11,8 +11,7 @@ interface LayersPanelProps {
 }
 
 export const LayersPanel = ({ activeSlide, selectedElementId, onSelectElement, onMoveElement, onClose }: LayersPanelProps) => {
-  // Elements are stored bottom-to-top in the array. 
-  // For the UI, we show them top-to-bottom.
+
   const elements = [...activeSlide.elements].reverse();
 
   return (
@@ -114,7 +113,7 @@ export const LayersPanel = ({ activeSlide, selectedElementId, onSelectElement, o
                     {el.type === 'rect' && <Square size={16} />}
                     {el.type === 'circle' && <CircleIcon size={16} />}
                   </div>
-                  
+
                   <div style={{ 
                     flex: 1, 
                     overflow: 'hidden', 
@@ -172,7 +171,7 @@ export const LayersPanel = ({ activeSlide, selectedElementId, onSelectElement, o
           </div>
         )}
       </div>
-      
+
       <div style={{ 
         padding: '12px 16px', 
         borderTop: '1px solid var(--border)', 
@@ -186,3 +185,4 @@ export const LayersPanel = ({ activeSlide, selectedElementId, onSelectElement, o
     </motion.div>
   );
 };
+

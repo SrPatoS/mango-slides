@@ -2,10 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import Database from "@tauri-apps/plugin-sql";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { Moon, Sun, Save, AlertCircle, Settings, Download, FileText, Presentation } from "lucide-react";
+import { Moon, Sun, Save, AlertCircle, Settings, Download } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 
-// Components
 import { Sidebar } from "./components/Sidebar";
 import { Toolbar } from "./components/Toolbar";
 import { Canvas } from "./components/Canvas";
@@ -15,22 +14,19 @@ import { ErrorModal } from "./components/ErrorModal";
 import { LayersPanel } from "./components/LayersPanel";
 import { ProjectsScreen } from "./components/ProjectsScreen";
 import { ConfirmModal } from "./components/ConfirmModal";
+import { ExportModal } from "./components/ExportModal";
 
-// Types
 import { Slide, SlideTheme, SlideFont, Project } from "./types";
 import { exportToPdf } from "./utils/exportPdf";
 import { exportToPptx } from "./utils/exportPptx";
-import { ExportModal } from "./components/ExportModal";
 
 import "./App.css";
 
 function App() {
-  // Project Management
   const [currentScreen, setCurrentScreen] = useState<'projects' | 'editor'>('projects');
   const [projects, setProjects] = useState<Project[]>([]);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
-  
-  // Confirmation Modal
+
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     title: string;
@@ -50,7 +46,7 @@ function App() {
       setIsExportModalOpen(false);
       const activeProject = projects.find(p => p.id === currentProjectId);
       const filename = (activeProject?.name || "apresentacao");
-      
+
       document.body.style.cursor = 'wait';
       try {
           if (type === 'pdf') {
@@ -60,13 +56,12 @@ function App() {
           }
       } catch (e) {
           console.error("Export falhou", e);
-          // Poderia usar um toast aqui
+
       } finally {
           document.body.style.cursor = 'default';
       }
   };
-  
-  // Existing states
+
   const [slides, setSlides] = useState<Slide[]>([
     { 
       id: "1", 
@@ -114,15 +109,14 @@ function App() {
       try {
         const db = await Database.load("sqlite:slideflow.db");
         console.log('✅ Banco de dados conectado');
-        
+
         await db.execute("CREATE TABLE IF NOT EXISTS secrets (name TEXT PRIMARY KEY, value TEXT)");
         console.log('✅ Tabela secrets verificada/criada');
-        
-        // Carregar API Key
+
         const result = await db.select<{ value: string }[]>(
           "SELECT value FROM secrets WHERE name = 'gemini_api_key'"
         );
-        
+
         if (result.length > 0) {
           console.log('🔑 API Key encontrada no banco, descriptografando...');
           const decrypted: string = await invoke("decrypt_key", { encryptedKey: result[0].value });
@@ -132,7 +126,6 @@ function App() {
           console.log('⚠️ Nenhuma API Key encontrada no banco');
         }
 
-        // Carregar status enabled
         const enabledResult = await db.select<{ value: string }[]>(
           "SELECT value FROM secrets WHERE name = 'gemini_enabled'"
         );
@@ -141,7 +134,6 @@ function App() {
           console.log('✅ Status enabled carregado:', enabledResult[0].value);
         }
 
-        // Carregar modelo selecionado
         const modelResult = await db.select<{ value: string }[]>(
           "SELECT value FROM secrets WHERE name = 'selected_model'"
         );
@@ -149,7 +141,7 @@ function App() {
           setSelectedModel(modelResult[0].value);
           console.log('✅ Modelo selecionado carregado:', modelResult[0].value);
         }
-        
+
         console.log('✅ Inicialização do banco concluída');
       } catch (err) {
         console.error("❌ Erro ao carregar SQLite:", err);
@@ -159,7 +151,6 @@ function App() {
     initDb();
   }, []);
 
-  // Load projects from database
   useEffect(() => {
     async function loadProjects() {
       try {
@@ -173,7 +164,7 @@ function App() {
             updated_at TEXT NOT NULL
           )
         `);
-        
+
         const result = await db.select<any[]>("SELECT * FROM projects ORDER BY updated_at DESC");
         const loadedProjects: Project[] = result.map(row => ({
           id: row.id,
@@ -182,7 +173,7 @@ function App() {
           updatedAt: row.updated_at,
           ...JSON.parse(row.data)
         }));
-        
+
         setProjects(loadedProjects);
         console.log(`✅ ${loadedProjects.length} projeto(s) carregado(s)`);
       } catch (err) {
@@ -192,11 +183,9 @@ function App() {
     loadProjects();
   }, []);
 
-  // Track unsaved changes
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Mark as changed when slides, theme, or font change
   useEffect(() => {
     if (!currentProjectId || currentScreen !== 'editor') return;
     setHasUnsavedChanges(true);
@@ -204,7 +193,7 @@ function App() {
 
   const saveCurrentProject = async () => {
     if (!currentProjectId) return;
-    
+
     setIsSaving(true);
     try {
       const db = await Database.load("sqlite:slideflow.db");
@@ -227,7 +216,7 @@ function App() {
           ? { ...p, slides, activeTheme, activeFont, updatedAt: new Date().toISOString() }
           : p
       ));
-      
+
       setHasUnsavedChanges(false);
       console.log('💾 Projeto salvo com sucesso');
     } catch (err) {
@@ -373,7 +362,7 @@ function App() {
     setSlides(prev => {
       const newId = (prev.length + 1).toString();
       const maxWidth = 880; // Largura máxima com margens dos dois lados
-      
+
       const newSlide: Slide = { 
         id: newId, 
         title: "Novo Slide", 
@@ -409,7 +398,7 @@ function App() {
   const deleteSlide = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (slides.length === 1) return;
-    
+
     setSlides(prev => prev.filter(s => s.id !== id));
     if (activeSlideId === id) {
       const currentIndex = slides.findIndex(s => s.id === id);
@@ -500,7 +489,7 @@ function App() {
       fontSize: type === 'text' ? 24 : undefined,
       color: type === 'text' ? 'var(--theme-text)' : 'var(--accent)'
     };
-    
+
     setSlides(prev => prev.map(s => {
       if (s.id !== activeSlideId) return s;
       return { ...s, elements: [...s.elements, newElement] };
@@ -541,7 +530,7 @@ function App() {
       img.src = dataUrl;
     };
     reader.readAsDataURL(file);
-    // Reset input so the same file can be selected again
+
     e.target.value = '';
   };
 
@@ -578,9 +567,10 @@ function App() {
     }
   };
 
-  const generateContent = async () => {
+  const generateContent = async (pdfContext?: string) => {
     if (!geminiKey) {
       alert("Por favor, configure sua API Key nas configurações primeiro.");
+      setIsSettingsOpen(true);
       return;
     }
 
@@ -595,12 +585,12 @@ function App() {
         medium: "Equilibre tópicos e frases explicativas. Conteúdo moderado.",
         high: "Use textos mais densos e detalhados, com explicações completas e parágrafos estruturados."
       };
-      
+
       const densityInstructions = densityMap[contentDensity as keyof typeof densityMap];
-      
+
       const quizInstruction = includeQuiz 
         ? `IMPORTANTE: Após os slides de conteúdo, você deve criar ${numQuizQuestions} slide(s) de QUIZ SEPARADOS.
-        
+
 REGRAS PARA SLIDES DE QUIZ:
 - O "title" deve conter APENAS a pergunta (sem alternativas)
 - O "subtitle" deve conter as alternativas formatadas como lista, uma por linha, exemplo:
@@ -612,9 +602,14 @@ D. Quarta alternativa
 NUNCA misture as alternativas (A, B, C, D) no meio do texto da pergunta.` 
         : "";
 
+      const contextInstruction = pdfContext 
+         ? `\nCONTEXTO DO DOCUMENTO ANEXADO (Use estas informações como fonte principal):\n"""\n${pdfContext.slice(0, 30000)}\n"""\n\nINSTRUÇÕES SOBRE O CONTEXTO:\n- Use as informações do texto acima para criar os slides.\n- Cite referências (ex: "Segundo o texto...") se fizer sentido.\n` 
+         : "";
+
       const prompt = `Você é um especialista em criação de apresentações educacionais. 
-      
+
 TÓPICO: "${aiPrompt}"
+${contextInstruction}
 
 ESTILO DE CONTEÚDO: ${densityInstructions}
 
@@ -637,58 +632,50 @@ IMPORTANTE: Não use markdown, não adicione explicações extras, apenas o JSON
       const result = await model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
-      
+
       const jsonStr = text.replace(/```json|```/g, "").trim();
       const slidesData = JSON.parse(jsonStr);
 
       if (Array.isArray(slidesData)) {
         const newSlides: Slide[] = slidesData.map((s, i) => {
           const slideId = Date.now() + i + "";
-          
-          // Detectar se é um slide de quiz (geralmente tem alternativas A, B, C, D)
+
           const isQuizSlide = s.subtitle && /^[A-D]\.\s/.test(s.subtitle);
-          
-          // Calcular tamanho de fonte dinâmico baseado no comprimento do texto
+
           const titleLength = (s.title || "").length;
           const subtitleLength = (s.subtitle || "").length;
-          
-          // Título: quanto mais longo, menor a fonte
+
           let titleFontSize = 48;
           if (titleLength > 100) titleFontSize = 24;
           else if (titleLength > 80) titleFontSize = 28;
           else if (titleLength > 60) titleFontSize = 32;
           else if (titleLength > 40) titleFontSize = 36;
-          
-          // Subtítulo: ajustar baseado no tipo e tamanho
+
           let subtitleFontSize = 24;
           if (isQuizSlide) {
-            // Quiz slides precisam de fonte menor para caber as alternativas
+
             if (subtitleLength > 200) subtitleFontSize = 16;
             else if (subtitleLength > 150) subtitleFontSize = 18;
             else subtitleFontSize = 20;
           } else {
-            // Slides normais
+
             if (subtitleLength > 300) subtitleFontSize = 18;
             else if (subtitleLength > 200) subtitleFontSize = 20;
             else if (subtitleLength > 100) subtitleFontSize = 22;
           }
-          
-          // Largura máxima para o texto (deixar margem dos dois lados)
+
           const maxWidth = 880; // 1000 - 60 (margem esq) - 60 (margem dir)
 
-          // Estimar caracteres por linha de forma mais precisa para evitar sobreposição
-          // Assumindo largura média de caractere como 0.6 * fontSize (aproximação conservadora)
           const avgCharWidth = titleFontSize * 0.6; 
           const charsPerLine = Math.floor(maxWidth / avgCharWidth);
-          
+
           const titleLines = Math.ceil(titleLength / charsPerLine); 
-          // line-height ~1.3 para dar respiro
+
           const titleHeight = titleFontSize * titleLines * 1.3; 
-          
-          // Ajustar posição Y do subtítulo baseado na altura real do título
+
           const titleY = 80; // Começar um pouco mais alto para aproveitar espaço
           const subtitleY = titleY + titleHeight + 40; // 40px de margem segura entre título e subtítulo
-          
+
           return {
             id: slideId,
             title: s.title || "Sem título",
@@ -713,7 +700,7 @@ IMPORTANTE: Não use markdown, não adicione explicações extras, apenas o JSON
                 width: maxWidth,
                 fontSize: subtitleFontSize,
                 color: 'var(--theme-text)',
-                // Justificar texto se for muito longo
+
                 ...(subtitleLength > 150 ? { textAlign: 'justify' } : {})
               }
             ]
@@ -723,7 +710,7 @@ IMPORTANTE: Não use markdown, não adicione explicações extras, apenas o JSON
         setSlides([...slides, ...newSlides]);
         setActiveSlideId(newSlides[0].id);
       }
-      
+
       setIsAiModalOpen(false);
       setAiPrompt("");
     } catch (err: any) {
@@ -944,7 +931,7 @@ IMPORTANTE: Não use markdown, não adicione explicações extras, apenas o JSON
 
         </>
       )}
-      
+
       {/* Global Modals */}
       <SettingsModal
         isOpen={isSettingsOpen}
@@ -975,9 +962,9 @@ IMPORTANTE: Não use markdown, não adicione explicações extras, apenas o JSON
         setIncludeQuiz={setIncludeQuiz}
         numQuizQuestions={numQuizQuestions}
         setNumQuizQuestions={setNumQuizQuestions}
-        onGenerate={generateContent}
+        onGenerate={(ctx) => generateContent(ctx)}
       />
-      
+
       <ExportModal 
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
@@ -1003,3 +990,4 @@ IMPORTANTE: Não use markdown, não adicione explicações extras, apenas o JSON
 }
 
 export default App;
+

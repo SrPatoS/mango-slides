@@ -1,7 +1,6 @@
 import PptxGenJS from "pptxgenjs";
 import { Slide, SlideTheme } from "../types";
 
-
 const createGradientBackground = (theme: SlideTheme): string | null => {
   if (theme !== 'corporate' && theme !== 'purple') return null;
 
@@ -14,23 +13,21 @@ const createGradientBackground = (theme: SlideTheme): string | null => {
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
 
-  
   const gradient = ctx.createLinearGradient(0, 0, width, height);
   if (theme === 'corporate') {
-    
+
     gradient.addColorStop(0, '#1e293b');
     gradient.addColorStop(1, '#0f172a');
   } else if (theme === 'purple') {
-    
+
     gradient.addColorStop(0, '#4c1d95');
     gradient.addColorStop(1, '#1e1b4b');
   }
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
 
-  
   if (theme === 'corporate') {
-    
+
     ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
     const dotSize = 1;
     const gap = 24;
@@ -43,7 +40,7 @@ const createGradientBackground = (theme: SlideTheme): string | null => {
       }
     }
   } else if (theme === 'purple') {
-    
+
     const radialGradient = ctx.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, height * 0.7);
     radialGradient.addColorStop(0, 'rgba(139, 92, 246, 0.25)');
     radialGradient.addColorStop(1, 'transparent');
@@ -58,11 +55,9 @@ const createGradientBackground = (theme: SlideTheme): string | null => {
 export const exportToPptx = async (slides: Slide[], activeTheme: SlideTheme, filename: string = "apresentacao.pptx") => {
   const pres = new PptxGenJS();
 
-  
   pres.layout = "LAYOUT_16x9";
   pres.title = filename.replace(".pptx", "");
 
-  
   const getThemeTextColor = (theme: SlideTheme) => {
     switch (theme) {
       case 'light': return '0F172A';
@@ -76,10 +71,8 @@ export const exportToPptx = async (slides: Slide[], activeTheme: SlideTheme, fil
 
   const themeTextColor = getThemeTextColor(activeTheme);
 
-  
   const themeGradientData = createGradientBackground(activeTheme);
 
-  
   const getThemeSolidColor = (theme: SlideTheme) => {
     switch (theme) {
       case 'light': return 'F8FAFC';
@@ -90,18 +83,10 @@ export const exportToPptx = async (slides: Slide[], activeTheme: SlideTheme, fil
   }
   const themeSolidColor = getThemeSolidColor(activeTheme);
 
-  
-  
-  
   const pxToInch = (px: number) => px * 0.01;
 
   for (const slideData of slides) {
     const slide = pres.addSlide();
-
-    
-    
-    
-    
 
     if (slideData.backgroundColor && slideData.backgroundColor !== 'transparent') {
       const color = slideData.backgroundColor.startsWith('#') ? slideData.backgroundColor.replace('#', '') : themeSolidColor;
@@ -112,21 +97,16 @@ export const exportToPptx = async (slides: Slide[], activeTheme: SlideTheme, fil
       slide.background = { color: themeSolidColor };
     }
 
-    
-    
-    
     const elementsToRender = JSON.parse(JSON.stringify(slideData.elements)); 
 
-    
     elementsToRender.sort((a: any, b: any) => a.y - b.y);
 
     for (let i = 0; i < elementsToRender.length; i++) {
       const el = elementsToRender[i];
 
-      
       if (el.type === 'text' && (el.fontSize || 24) >= 32) {
         const fontSize = el.fontSize || 48;
-        
+
         const boxWidth = el.width || 880;
         const charWidth = fontSize * 0.7;
         const charsPerLine = Math.floor(boxWidth / charWidth);
@@ -136,12 +116,11 @@ export const exportToPptx = async (slides: Slide[], activeTheme: SlideTheme, fil
 
         const bottomY = el.y + estimatedHeight;
 
-        
         for (let j = i + 1; j < elementsToRender.length; j++) {
           const nextEl = elementsToRender[j];
-          
+
           if (nextEl.y < bottomY + 60) {
-            
+
             const shift = (bottomY + 60) - nextEl.y;
             nextEl.y += shift;
           }
@@ -149,14 +128,12 @@ export const exportToPptx = async (slides: Slide[], activeTheme: SlideTheme, fil
       }
     }
 
-    
     elementsToRender.forEach((el: any) => {
       const x = pxToInch(el.x);
       const y = pxToInch(el.y);
       const w = el.width ? pxToInch(el.width) : undefined;
       const h = el.height ? pxToInch(el.height) : undefined;
 
-      
       let color = themeTextColor;
       if (el.color && el.color !== 'var(--theme-text)') {
         if (el.color.startsWith('#')) color = el.color.replace('#', '');
@@ -170,16 +147,16 @@ export const exportToPptx = async (slides: Slide[], activeTheme: SlideTheme, fil
           fontSize,
           color,
           fontFace: 'Arial', 
-          
+
           align: (el as any).textAlign || 'left',
           valign: 'top',
-          
+
           wrap: true
         });
       }
       else if (el.type === 'image') {
         if (el.content) {
-          
+
           slide.addImage({
             data: el.content,
             x, y, w, h
@@ -203,7 +180,6 @@ export const exportToPptx = async (slides: Slide[], activeTheme: SlideTheme, fil
     });
   }
 
-  
   try {
     const { save } = await import('@tauri-apps/plugin-dialog');
     const { writeFile } = await import('@tauri-apps/plugin-fs');
@@ -217,11 +193,10 @@ export const exportToPptx = async (slides: Slide[], activeTheme: SlideTheme, fil
     });
 
     if (selectedPath) {
-      
+
       const buffer = await pres.write({ outputType: 'arraybuffer' }) as ArrayBuffer;
       await writeFile(selectedPath, new Uint8Array(buffer));
 
-      
       const { message } = await import('@tauri-apps/plugin-dialog');
       await message('Apresentação exportada com sucesso!', {
         title: 'Sucesso',
@@ -230,8 +205,9 @@ export const exportToPptx = async (slides: Slide[], activeTheme: SlideTheme, fil
     }
   } catch (err) {
     console.error("Erro ao salvar PPTX:", err);
-    
+
     await pres.writeFile({ fileName: filename });
   }
 };
+
 

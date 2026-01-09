@@ -23,7 +23,7 @@ export const PasswordModal: React.FC<PasswordModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setPassword('');
-      // Focus input after animation
+
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [isOpen]);
@@ -120,3 +120,4 @@ export const PasswordModal: React.FC<PasswordModalProps> = ({
     </AnimatePresence>
   );
 };
+

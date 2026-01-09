@@ -16,7 +16,6 @@ interface CanvasProps {
   font: string;
 }
 
-// Sub-component for each element's visual part (clipped)
 const ElementVisual = ({ el }: { el: SlideElement }) => {
   return (
     <div
@@ -78,7 +77,6 @@ const ElementVisual = ({ el }: { el: SlideElement }) => {
   );
 };
 
-// Sub-component for each element's interaction part (not clipped)
 const ElementControls = ({ 
   el, 
   activeSlideId,
@@ -342,7 +340,7 @@ const ElementControls = ({
             )}
 
             <div style={{ width: '1px', height: '24px', backgroundColor: '#3f3f46' }} />
-            
+
             {/* Layer Controls */}
             <div style={{ display: 'flex', gap: '4px' }}>
                 <button 
@@ -467,7 +465,7 @@ export const Canvas = ({
   theme, 
   font 
 }: CanvasProps) => {
-  
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedElementId) {
@@ -532,3 +530,4 @@ export const Canvas = ({
     </div>
   );
 };
+

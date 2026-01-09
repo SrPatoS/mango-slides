@@ -51,3 +51,4 @@ export const ErrorModal = ({ isOpen, onClose, errorDetails }: ErrorModalProps) =
     </div>
   );
 };
+

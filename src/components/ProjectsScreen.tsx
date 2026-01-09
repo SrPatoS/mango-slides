@@ -285,7 +285,7 @@ export const ProjectsScreen = ({
                       <span style={{ marginTop: 8, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Sem slides</span>
                   </div>
               )}
-              
+
               <div style={{
                 position: 'absolute',
                 bottom: '12px',
@@ -436,3 +436,4 @@ export const ProjectsScreen = ({
     </div>
   );
 };
+

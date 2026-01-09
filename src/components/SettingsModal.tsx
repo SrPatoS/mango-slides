@@ -39,9 +39,7 @@ export const SettingsModal = ({
         try {
           const name = await app.getName();
           const version = await app.getVersion();
-          // Capitalize Name if needed or use as is. Tauri typically returns package name.
-          // Let's format it nicer if it matches the default 'tauri-app' or similar, 
-          // otherwise trust the API.
+
           setAppInfo({ 
              name: name === 'tauri-app' ? 'MangoSlides Designer' : name, 
              version 
@@ -52,26 +50,23 @@ export const SettingsModal = ({
       });
     }
   }, [activeTab]);
-  
-  // Password Modal State
+
   const [passwordModal, setPasswordModal] = useState<{
     isOpen: boolean;
     mode: 'export' | 'import';
     fileToImport?: string; // Temporarily store file path/content for import flow
   }>({ isOpen: false, mode: 'export' });
 
-  // Handle Export Flow
   const handleExport = async (password: string) => {
     try {
         const { save } = await import('@tauri-apps/plugin-dialog');
         const { writeFile } = await import('@tauri-apps/plugin-fs');
         const Database = (await import('@tauri-apps/plugin-sql')).default;
-        
-        // 1. Fetch DB Data
+
         const db = await Database.load("sqlite:slideflow.db");
         const projects = await db.select("SELECT * FROM projects");
         const secrets = await db.select("SELECT * FROM secrets"); 
-        
+
         const rawData = JSON.stringify({
           projects,
           secrets,
@@ -79,11 +74,10 @@ export const SettingsModal = ({
           version: 1
         });
 
-        // 2. Encrypt
         const enc = new TextEncoder();
         const salt = window.crypto.getRandomValues(new Uint8Array(16));
         const iv = window.crypto.getRandomValues(new Uint8Array(12));
-        
+
         const keyMaterial = await window.crypto.subtle.importKey(
             "raw", 
             enc.encode(password), 
@@ -91,7 +85,7 @@ export const SettingsModal = ({
             false, 
             ["deriveKey"]
         );
-        
+
         const key = await window.crypto.subtle.deriveKey(
             {
                 name: "PBKDF2",
@@ -116,7 +110,6 @@ export const SettingsModal = ({
         encryptedArray.set(iv, salt.byteLength);
         encryptedArray.set(new Uint8Array(encryptedContent), salt.byteLength + iv.byteLength);
 
-        // 3. Save
         const filePath = await save({
           filters: [{
             name: 'Backup Seguro',
@@ -124,7 +117,7 @@ export const SettingsModal = ({
           }],
           defaultPath: `mangoslides-secure-backup-${new Date().toISOString().split('T')[0]}.bin`
         });
-        
+
         if (filePath) {
           await writeFile(filePath, encryptedArray);
           alert('Backup CRIPTOGRAFADO exportado com sucesso!');
@@ -137,7 +130,6 @@ export const SettingsModal = ({
     }
   };
 
-  // Handle Import Flow
   const handleImport = async (password: string) => {
     if (!passwordModal.fileToImport) return;
 
@@ -160,7 +152,7 @@ export const SettingsModal = ({
           false, 
           ["deriveKey"]
         );
-        
+
         const key = await window.crypto.subtle.deriveKey(
           {
               name: "PBKDF2",
@@ -187,10 +179,9 @@ export const SettingsModal = ({
             return; // Don't close modal on wrong password
         }
 
-        // Proceed to restore
         const parsedData = JSON.parse(jsonString);
         await restoreDatabase(parsedData, Database);
-        
+
         alert('Backup importado com sucesso!');
         setPasswordModal({ ...passwordModal, isOpen: false });
         onResetDatabase?.();
@@ -218,13 +209,10 @@ export const SettingsModal = ({
 
       await db.execute("DELETE FROM projects");
       for (const p of projectsFn) {
-        // Ensure p.data exists. If it's a legacy backup where p object structure is different, we might need to stringify slides.
-        // However, based on how we export (SELECT *), p should have 'data'.
-        // If p comes from a very old backup structure (plain array of objects with slides property?), we should handle it.
-        
+
         let dataContent = p.data;
         if (!dataContent && p.slides) {
-            // Converts legacy object structure to new structure if needed
+
             dataContent = JSON.stringify({
                 slides: p.slides,
                 activeTheme: p.activeTheme || 'light',
@@ -256,12 +244,12 @@ export const SettingsModal = ({
   const startImport = async () => {
       try {
         const { open, ask, message } = await import('@tauri-apps/plugin-dialog');
-        
+
         const confirmed = await ask('Isso irá substituir todos os seus projetos e configurações atuais. Deseja continuar?', {
             title: 'Atenção: Substituição de Dados',
             kind: 'warning'
         });
-        
+
         if (!confirmed) return;
 
         const { readFile } = await import('@tauri-apps/plugin-fs');
@@ -275,8 +263,7 @@ export const SettingsModal = ({
         if (selected) {
             const path = selected as string;
             const fileBytes = await readFile(path);
-            
-            // Check for JSON signature (heuristic)
+
             const isJson = (fileBytes[0] === 123 || fileBytes[0] === 91); // '{' or '['
 
             if (isJson) {
@@ -284,19 +271,19 @@ export const SettingsModal = ({
                     title: 'Arquivo Não Seguro',
                     kind: 'info'
                 });
-                
+
                 if(!importUnsecure) return;
 
                 const decoder = new TextDecoder();
                 const jsonStr = decoder.decode(fileBytes);
                 const data = JSON.parse(jsonStr);
                 await restoreDatabase(data, Database);
-                
+
                 await message('Backup importado com sucesso! O aplicativo será recarregado.', { title: 'Sucesso' });
                 onResetDatabase?.();
                 window.location.reload();
             } else {
-                // Secure format -> Open password modal
+
                 setPasswordModal({ 
                     isOpen: true, 
                     mode: 'import',
@@ -385,7 +372,7 @@ export const SettingsModal = ({
                         </label>
                       </div>
                     </div>
-                    
+
                     <div className={`card-body ${geminiEnabled ? 'active' : ''}`}>
                       <div className="input-group">
                         <label>API Key</label>
@@ -437,10 +424,10 @@ export const SettingsModal = ({
                         <span>Exportar Backup</span>
                       </div>
                     </div>
-                    
+
                     <div className="card-body active">
                       <p>Baixe uma cópia de segurança criptografada de todos os seus projetos e configurações (incluindo chaves de API).</p>
-                      
+
                       <button 
                         className="primary-button"
                         onClick={startExport}
@@ -458,10 +445,10 @@ export const SettingsModal = ({
                         <span>Importar Backup</span>
                       </div>
                     </div>
-                    
+
                     <div className="card-body active">
                       <p><strong>Atenção:</strong> Importar um backup irá <strong>substituir</strong> todos os projetos e configurações atuais.</p>
-                      
+
                       <button 
                         className="secondary-button"
                         onClick={startImport}
@@ -488,10 +475,10 @@ export const SettingsModal = ({
                         <span>Zona de Perigo</span>
                       </div>
                     </div>
-                    
+
                     <div className="card-body active">
                       <p>Resetar o banco de dados irá <strong>excluir permanentemente</strong> todos os seus projetos, slides e configurações. Esta ação não pode ser desfeita.</p>
-                      
+
                       <button 
                         className="danger-button"
                         onClick={onResetDatabase}
@@ -544,7 +531,7 @@ export const SettingsModal = ({
           </div>
         </motion.div>
       </div>
-      
+
       {/* Render Password Modal outside the main modal container but inside AnimatePresence if needed, or better: parallel to it */}
        <PasswordModal 
          isOpen={passwordModal.isOpen}
@@ -558,3 +545,4 @@ export const SettingsModal = ({
     </AnimatePresence>
   );
 };
+

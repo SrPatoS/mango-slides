@@ -23,7 +23,6 @@ export const Sidebar = ({
   onDeleteSlide
 }: SidebarProps) => {
 
-  // renderSlidePreview logic removed, using SlideRenderer directly
   const renderSlidePreview = (slide: Slide) => {
      return (
         <div style={{
@@ -47,7 +46,7 @@ export const Sidebar = ({
       <div className="sidebar-header">
         <h2>Meus Slides</h2>
       </div>
-      
+
       <div className="slide-list">
         {slides.map((slide, index) => (
           <div 
@@ -56,8 +55,7 @@ export const Sidebar = ({
             onClick={() => onSlideSelect(slide.id)}
             style={{
                 borderColor: activeSlideId === slide.id ? 'var(--accent)' : 'transparent',
-                // For minimal theme, we might want a border to distinguish white slide from white sidebar background?
-                // Assuming sidebar background is distinct enough managed by App.css
+
             }}
           >
             <span className="slide-thumb-number">{index + 1}</span>
@@ -82,3 +80,4 @@ export const Sidebar = ({
     </aside>
   );
 };
+

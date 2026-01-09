@@ -85,7 +85,7 @@ export const ExportModal = ({ isOpen, onClose, onExport }: ExportModalProps) => 
             }}>
                 Formato do arquivo
             </label>
-            
+
             <div style={{ position: 'relative' }}>
                 <select 
                     value={selectedFormat}
@@ -150,3 +150,4 @@ export const ExportModal = ({ isOpen, onClose, onExport }: ExportModalProps) => 
     </div>
   );
 };
+

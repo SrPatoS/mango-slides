@@ -1,5 +1,9 @@
-import { X, Sparkles, HelpCircle } from "lucide-react";
+import { X, Sparkles, HelpCircle, Upload, FileText, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useState, useRef } from "react";
+import * as pdfjsLib from 'pdfjs-dist';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 interface AiModalProps {
   isOpen: boolean;
@@ -17,7 +21,7 @@ interface AiModalProps {
   setIncludeQuiz: (include: boolean) => void;
   numQuizQuestions: number;
   setNumQuizQuestions: (num: number) => void;
-  onGenerate: () => void;
+  onGenerate: (context?: string) => void;
 }
 
 export const AiModal = ({
@@ -38,7 +42,55 @@ export const AiModal = ({
   setNumQuizQuestions,
   onGenerate
 }: AiModalProps) => {
+  const [pdfContext, setPdfContext] = useState<string>("");
+  const [pdfFileName, setPdfFileName] = useState<string | null>(null);
+  const [isReadingPdf, setIsReadingPdf] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   if (!isOpen) return null;
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf') {
+        alert('Por favor, selecione apenas arquivos PDF.');
+        return;
+    }
+
+    setIsReadingPdf(true);
+    setPdfFileName(file.name);
+
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+        let fullText = '';
+
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items.map((item: any) => item.str).join(' ');
+            fullText += `--- Página ${i} ---\n${pageText}\n\n`;
+        }
+
+        setPdfContext(fullText);
+        console.log("PDF lido com sucesso, caracteres:", fullText.length);
+
+    } catch (error) {
+        console.error("Erro ao ler PDF:", error);
+        alert("Erro ao ler o arquivo PDF. Verifique se não está corrompido.");
+        setPdfFileName(null);
+        setPdfContext("");
+    } finally {
+        setIsReadingPdf(false);
+    }
+  };
+
+  const clearPdf = () => {
+    setPdfFileName(null);
+    setPdfContext("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   const labelStyle = {
     fontSize: '0.85rem',
@@ -132,13 +184,13 @@ export const AiModal = ({
                   Criando sua apresentação...
                 </h3>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
-                  A IA está escrevendo {numSlides} slides sobre "{aiPrompt.slice(0, 30)}{aiPrompt.length > 30 ? '...' : ''}"
+                  A IA está analisando o conteúdo e escrevendo {numSlides} slides...
                 </p>
               </div>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              
+
               {/* Row 1: Settings Grid */}
               <div style={{ 
                 display: 'grid', 
@@ -152,8 +204,8 @@ export const AiModal = ({
                     value={selectedModel}
                     onChange={(e) => setSelectedModel(e.target.value)}
                   >
-                    <option value="gemini-2.5-flash">Gemini 2.5 Flash (Rápido)</option>
-                    <option value="gemini-2.5-pro">Gemini 2.5 Pro (Melhor)</option>
+                    <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                    <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
                   </select>
                 </div>
 
@@ -165,9 +217,9 @@ export const AiModal = ({
                     onChange={(e) => setContentDensity(e.target.value)}
                   >
                     <option value="bullets">Tópicos</option>
-                    <option value="low">Resumido</option>
+                    <option value="low">Resumo</option>
                     <option value="medium">Padrão</option>
-                    <option value="high">Detalhado</option>
+                    <option value="high">Detalhe</option>
                   </select>
                 </div>
 
@@ -184,7 +236,103 @@ export const AiModal = ({
                 </div>
               </div>
 
-              {/* Row 2: Quiz Toggle Card */}
+              {/* Row 2: File Upload (PDF) */}
+              <div>
+                <label style={labelStyle}>Contexto (Opcional)</label>
+                <input 
+                    type="file" 
+                    ref={fileInputRef}
+                    style={{ display: 'none' }} 
+                    accept="application/pdf"
+                    onChange={handleFileUpload}
+                />
+
+                {!pdfFileName ? (
+                    <div 
+                        onClick={() => fileInputRef.current?.click()}
+                        style={{
+                            border: '1px dashed var(--border)',
+                            borderRadius: '8px',
+                            padding: '16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '10px',
+                            cursor: 'pointer',
+                            color: 'var(--text-secondary)',
+                            transition: 'all 0.2s',
+                            backgroundColor: isReadingPdf ? 'var(--bg-highlight)' : 'transparent'
+                        }}
+                        onMouseOver={(e) => {
+                             e.currentTarget.style.borderColor = 'var(--accent)';
+                             e.currentTarget.style.color = 'var(--text-primary)';
+                        }}
+                        onMouseOut={(e) => {
+                             e.currentTarget.style.borderColor = 'var(--border)';
+                             e.currentTarget.style.color = 'var(--text-secondary)';
+                        }}
+                    >
+                        {isReadingPdf ? (
+                            <>
+                                <div style={{
+                                    width: '16px', height: '16px', border: '2px solid currentColor', 
+                                    borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s infinite' 
+                                }} />
+                                Lendo PDF...
+                            </>
+                        ) : (
+                            <>
+                                <Upload size={18} />
+                                <span style={{ fontSize: '0.9rem' }}>Anexar PDF para referência</span>
+                            </>
+                        )}
+                    </div>
+                ) : (
+                    <div style={{
+                        border: '1px solid var(--border)',
+                        borderRadius: '8px',
+                        padding: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        backgroundColor: 'rgba(var(--accent-rgb), 0.05)'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
+                            <div style={{ 
+                                background: '#ef4444', 
+                                borderRadius: '4px', 
+                                padding: '4px',
+                                display: 'flex',
+                                color: 'white'
+                            }}>
+                                <FileText size={16} />
+                            </div>
+                            <span style={{ 
+                                fontSize: '0.9rem', 
+                                color: 'var(--text-primary)',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                maxWidth: '300px'
+                            }}>
+                                {pdfFileName}
+                            </span>
+                        </div>
+                        <button 
+                            onClick={clearPdf}
+                            style={{ 
+                                background: 'transparent', border: 'none', cursor: 'pointer', 
+                                color: 'var(--text-secondary)', padding: '4px' 
+                            }}
+                            title="Remover arquivo"
+                        >
+                            <Trash2 size={16} />
+                        </button>
+                    </div>
+                )}
+              </div>
+
+              {/* Row 3: Quiz Toggle Card */}
               <div style={{
                 backgroundColor: 'var(--bg-main)',
                 border: '1px solid var(--border)',
@@ -217,7 +365,7 @@ export const AiModal = ({
                             />
                          </div>
                     )}
-                    
+
                     <label className="switch" style={{ position: 'relative', display: 'inline-block', width: '44px', height: '24px' }}>
                       <input 
                         type="checkbox" 
@@ -249,7 +397,7 @@ export const AiModal = ({
                  </div>
               </div>
 
-              {/* Row 3: Textarea */}
+              {/* Row 4: Textarea */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <label style={labelStyle}>Sobre o que é sua apresentação?</label>
@@ -259,38 +407,19 @@ export const AiModal = ({
                     </div>
                 </div>
                 <textarea 
-                  placeholder="Ex: A revolução industrial do século XVIII, focando nas máquinas a vapor e impacto social..."
+                  placeholder={pdfFileName ? "Descreva como usar o PDF acima (ex: Resuma os principais pontos do capítulo 3...)" : "Ex: A revolução industrial do século XVIII, focando nas máquinas a vapor e impacto social..."}
                   value={aiPrompt}
                   onChange={(e) => setAiPrompt(e.target.value)}
                   autoFocus
                   style={{
                     ...inputStyle,
-                    height: '120px',
+                    height: '100px',
                     resize: 'none',
                     lineHeight: '1.5'
                   }}
                   onFocus={(e) => e.target.style.borderColor = 'var(--accent)'}
                   onBlur={(e) => e.target.style.borderColor = 'var(--border)'}
                 />
-              </div>
-
-              {/* Info Text */}
-              <div style={{ 
-                backgroundColor: 'rgba(var(--accent-rgb), 0.05)', 
-                border: '1px solid rgba(var(--accent-rgb), 0.1)',
-                borderRadius: '8px',
-                padding: '10px 14px',
-                fontSize: '0.85rem',
-                color: 'var(--text-secondary)',
-                display: 'flex',
-                gap: '8px',
-                alignItems: 'start'
-              }}>
-                <Sparkles size={14} style={{ color: 'var(--accent)', marginTop: '2px', flexShrink: 0 }} />
-                <span>
-                  Serão gerados <strong>{numSlides} slides</strong> de conteúdo
-                  {includeQuiz ? `, mais ${numQuizQuestions} perguntas de quiz` : ""} e slides de abertura/encerramento.
-                </span>
               </div>
 
             </div>
@@ -308,13 +437,13 @@ export const AiModal = ({
           </button>
           <button 
             className="primary-button" 
-            onClick={onGenerate}
-            disabled={isGenerating || !aiPrompt.trim()}
+            onClick={() => onGenerate(pdfContext)}
+            disabled={isGenerating || (!aiPrompt.trim() && !pdfContext)}
             style={{ 
                 width: 'auto', 
                 padding: '10px 24px',
-                opacity: (isGenerating || !aiPrompt.trim()) ? 0.6 : 1,
-                cursor: (isGenerating || !aiPrompt.trim()) ? 'not-allowed' : 'pointer',
+                opacity: (isGenerating || (!aiPrompt.trim() && !pdfContext)) ? 0.6 : 1,
+                cursor: (isGenerating || (!aiPrompt.trim() && !pdfContext)) ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px'
@@ -334,3 +463,4 @@ export const AiModal = ({
     </div>
   );
 };
+
