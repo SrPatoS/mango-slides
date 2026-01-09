@@ -63,34 +63,50 @@ function App() {
 
   useEffect(() => {
     async function initDb() {
+      console.log('🔄 Inicializando banco de dados...');
       try {
         const db = await Database.load("sqlite:slideflow.db");
-        await db.execute("CREATE TABLE IF NOT EXISTS secrets (name TEXT PRIMARY KEY, value TEXT)");
+        console.log('✅ Banco de dados conectado');
         
+        await db.execute("CREATE TABLE IF NOT EXISTS secrets (name TEXT PRIMARY KEY, value TEXT)");
+        console.log('✅ Tabela secrets verificada/criada');
+        
+        // Carregar API Key
         const result = await db.select<{ value: string }[]>(
           "SELECT value FROM secrets WHERE name = 'gemini_api_key'"
         );
         
         if (result.length > 0) {
-          const decrypted: string = await invoke("decrypt_key", { encrypted_key: result[0].value });
+          console.log('🔑 API Key encontrada no banco, descriptografando...');
+          const decrypted: string = await invoke("decrypt_key", { encryptedKey: result[0].value });
           setGeminiKey(decrypted);
+          console.log('✅ API Key carregada com sucesso');
+        } else {
+          console.log('⚠️ Nenhuma API Key encontrada no banco');
         }
 
+        // Carregar status enabled
         const enabledResult = await db.select<{ value: string }[]>(
           "SELECT value FROM secrets WHERE name = 'gemini_enabled'"
         );
         if (enabledResult.length > 0) {
           setGeminiEnabled(enabledResult[0].value === "true");
+          console.log('✅ Status enabled carregado:', enabledResult[0].value);
         }
 
+        // Carregar modelo selecionado
         const modelResult = await db.select<{ value: string }[]>(
           "SELECT value FROM secrets WHERE name = 'selected_model'"
         );
         if (modelResult.length > 0) {
           setSelectedModel(modelResult[0].value);
+          console.log('✅ Modelo selecionado carregado:', modelResult[0].value);
         }
+        
+        console.log('✅ Inicialização do banco concluída');
       } catch (err) {
-        console.error("Erro ao carregar SQLite:", err);
+        console.error("❌ Erro ao carregar SQLite:", err);
+        console.error("Detalhes do erro:", JSON.stringify(err, null, 2));
       }
     }
     initDb();
