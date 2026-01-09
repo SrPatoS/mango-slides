@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import Database from "@tauri-apps/plugin-sql";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, Save, AlertCircle } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 
 // Components
@@ -13,13 +13,20 @@ import { SettingsModal } from "./components/SettingsModal";
 import { AiModal } from "./components/AiModal";
 import { ErrorModal } from "./components/ErrorModal";
 import { LayersPanel } from "./components/LayersPanel";
+import { ProjectsScreen } from "./components/ProjectsScreen";
 
 // Types
-import { Slide, SlideTheme, SlideFont } from "./types";
+import { Slide, SlideTheme, SlideFont, Project } from "./types";
 
 import "./App.css";
 
 function App() {
+  // Project Management
+  const [currentScreen, setCurrentScreen] = useState<'projects' | 'editor'>('projects');
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
+  
+  // Existing states
   const [slides, setSlides] = useState<Slide[]>([
     { 
       id: "1", 
@@ -112,6 +119,181 @@ function App() {
     initDb();
   }, []);
 
+  // Load projects from database
+  useEffect(() => {
+    async function loadProjects() {
+      try {
+        const db = await Database.load("sqlite:slideflow.db");
+        await db.execute(`
+          CREATE TABLE IF NOT EXISTS projects (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            data TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+          )
+        `);
+        
+        const result = await db.select<any[]>("SELECT * FROM projects ORDER BY updated_at DESC");
+        const loadedProjects: Project[] = result.map(row => ({
+          id: row.id,
+          name: row.name,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+          ...JSON.parse(row.data)
+        }));
+        
+        setProjects(loadedProjects);
+        console.log(`✅ ${loadedProjects.length} projeto(s) carregado(s)`);
+      } catch (err) {
+        console.error("❌ Erro ao carregar projetos:", err);
+      }
+    }
+    loadProjects();
+  }, []);
+
+  // Track unsaved changes
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Mark as changed when slides, theme, or font change
+  useEffect(() => {
+    if (!currentProjectId || currentScreen !== 'editor') return;
+    setHasUnsavedChanges(true);
+  }, [slides, activeTheme, activeFont]);
+
+  const saveCurrentProject = async () => {
+    if (!currentProjectId) return;
+    
+    setIsSaving(true);
+    try {
+      const db = await Database.load("sqlite:slideflow.db");
+      const project = projects.find(p => p.id === currentProjectId);
+      if (!project) return;
+
+      const data = JSON.stringify({
+        slides,
+        activeTheme,
+        activeFont
+      });
+
+      await db.execute(
+        "UPDATE projects SET data = ?, updated_at = ? WHERE id = ?",
+        [data, new Date().toISOString(), currentProjectId]
+      );
+
+      setProjects(prev => prev.map(p => 
+        p.id === currentProjectId 
+          ? { ...p, slides, activeTheme, activeFont, updatedAt: new Date().toISOString() }
+          : p
+      ));
+      
+      setHasUnsavedChanges(false);
+      console.log('💾 Projeto salvo com sucesso');
+    } catch (err) {
+      console.error("❌ Erro ao salvar projeto:", err);
+      alert("Erro ao salvar o projeto. Tente novamente.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const createNewProject = async () => {
+    const projectId = `proj-${Date.now()}`;
+    const now = new Date().toISOString();
+    const initialSlides: Slide[] = [
+      { 
+        id: "1", 
+        title: "Meu Primeiro Slide", 
+        subtitle: "Clique para editar este subtítulo...",
+        elements: [
+          { id: 'el-1', type: 'text', content: 'Meu Primeiro Slide', x: 60, y: 150, fontSize: 48, color: 'var(--theme-text)' },
+          { id: 'el-2', type: 'text', content: 'Clique para editar este subtítulo...', x: 60, y: 250, fontSize: 24, color: 'var(--theme-text)' }
+        ]
+      }
+    ];
+
+    const newProject: Project = {
+      id: projectId,
+      name: "Novo Projeto",
+      createdAt: now,
+      updatedAt: now,
+      slides: initialSlides,
+      activeTheme: "light",
+      activeFont: "sans"
+    };
+
+    try {
+      const db = await Database.load("sqlite:slideflow.db");
+      const data = JSON.stringify({
+        slides: initialSlides,
+        activeTheme: "light",
+        activeFont: "sans"
+      });
+
+      await db.execute(
+        "INSERT INTO projects (id, name, data, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+        [projectId, newProject.name, data, now, now]
+      );
+
+      setProjects(prev => [newProject, ...prev]);
+      openProject(projectId);
+      console.log('✅ Novo projeto criado');
+    } catch (err) {
+      console.error("❌ Erro ao criar projeto:", err);
+    }
+  };
+
+  const openProject = (projectId: string) => {
+    const project = projects.find(p => p.id === projectId);
+    if (!project) return;
+
+    setSlides(project.slides);
+    setActiveTheme(project.activeTheme);
+    setActiveFont(project.activeFont);
+    setActiveSlideId(project.slides[0]?.id || "1");
+    setCurrentProjectId(projectId);
+    setCurrentScreen('editor');
+    console.log(`📂 Projeto "${project.name}" aberto`);
+  };
+
+  const deleteProject = async (projectId: string) => {
+    try {
+      const db = await Database.load("sqlite:slideflow.db");
+      await db.execute("DELETE FROM projects WHERE id = ?", [projectId]);
+      setProjects(prev => prev.filter(p => p.id !== projectId));
+      console.log('🗑️ Projeto deletado');
+    } catch (err) {
+      console.error("❌ Erro ao deletar projeto:", err);
+    }
+  };
+
+  const renameProject = async (projectId: string, newName: string) => {
+    try {
+      const db = await Database.load("sqlite:slideflow.db");
+      await db.execute("UPDATE projects SET name = ? WHERE id = ?", [newName, projectId]);
+      setProjects(prev => prev.map(p => p.id === projectId ? { ...p, name: newName } : p));
+      console.log(`✏️ Projeto renomeado para "${newName}"`);
+    } catch (err) {
+      console.error("❌ Erro ao renomear projeto:", err);
+    }
+  };
+
+  const backToProjects = async () => {
+    if (hasUnsavedChanges) {
+      const confirmed = confirm("Você tem alterações não salvas. Deseja salvar antes de voltar?");
+      if (confirmed) {
+        await saveCurrentProject();
+      } else {
+        const discard = confirm("Tem certeza que deseja descartar as alterações?");
+        if (!discard) return;
+      }
+    }
+    setCurrentScreen('projects');
+    setCurrentProjectId(null);
+    setHasUnsavedChanges(false);
+  };
+
   const addSlide = () => {
     setSlides(prev => {
       const newId = (prev.length + 1).toString();
@@ -132,20 +314,43 @@ function App() {
 
   const deleteSlide = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (slides.length === 1) return;
+    
+    setSlides(prev => prev.filter(s => s.id !== id));
+    if (activeSlideId === id) {
+      const currentIndex = slides.findIndex(s => s.id === id);
+      const nextSlide = slides[currentIndex + 1] || slides[currentIndex - 1];
+      setActiveSlideId(nextSlide.id);
+    }
+  };
+
+  const duplicateSlide = (id: string) => {
+    const slideToDuplicate = slides.find(s => s.id === id);
+    if (!slideToDuplicate) return;
+
+    const newId = `${Date.now()}`;
+    const duplicatedSlide: Slide = {
+      ...slideToDuplicate,
+      id: newId,
+      title: `${slideToDuplicate.title} (Cópia)`,
+      elements: slideToDuplicate.elements.map(el => ({
+        ...el,
+        id: `el-${Date.now()}-${Math.random()}`
+      }))
+    };
+
     setSlides(prev => {
-      if (prev.length <= 1) return prev; // Prevent deleting the last slide
-      const filtered = prev.filter((s) => s.id !== id);
-      if (activeSlideId === id && filtered.length > 0) {
-        // Find the index of the deleted slide in the original array
-        const currentIndex = prev.findIndex(s => s.id === id);
-        // Determine the next active slide: if not the first, then the one before; otherwise, the new first
-        const nextActiveIndex = currentIndex > 0 ? currentIndex - 1 : 0;
-        setActiveSlideId(filtered[nextActiveIndex].id);
-      } else if (filtered.length === 0) {
-        // This case should ideally not happen if we prevent deleting the last slide
-        setActiveSlideId(""); // Or handle as appropriate for an empty state
-      }
-      return filtered;
+      const index = prev.findIndex(s => s.id === id);
+      return [...prev.slice(0, index + 1), duplicatedSlide, ...prev.slice(index + 1)];
+    });
+  };
+
+  const reorderSlides = (fromIndex: number, toIndex: number) => {
+    setSlides(prev => {
+      const newSlides = [...prev];
+      const [removed] = newSlides.splice(fromIndex, 1);
+      newSlides.splice(toIndex, 0, removed);
+      return newSlides;
     });
   };
 
@@ -374,9 +579,16 @@ IMPORTANTE: Não use markdown, não adicione explicações extras, apenas o JSON
             else if (subtitleLength > 100) subtitleFontSize = 22;
           }
           
-          // Ajustar posição Y do subtítulo baseado no tamanho do título
-          const titleY = 150; // Começar mais para baixo, mais centralizado
-          const subtitleY = titleY + titleFontSize + 50; // 50px de margem entre título e subtítulo
+          // Calcular altura estimada do título (aproximação)
+          const titleLines = Math.ceil(titleLength / 40); // ~40 chars por linha
+          const titleHeight = titleFontSize * titleLines * 1.2; // line-height ~1.2
+          
+          // Ajustar posição Y do subtítulo baseado na altura real do título
+          const titleY = 100; // Começar um pouco mais alto
+          const subtitleY = titleY + titleHeight + 30; // 30px de margem entre título e subtítulo
+          
+          // Largura máxima para o texto (deixar margem dos dois lados)
+          const maxWidth = 880; // 1000 - 60 (margem esq) - 60 (margem dir)
           
           return {
             id: slideId,
@@ -389,6 +601,7 @@ IMPORTANTE: Não use markdown, não adicione explicações extras, apenas o JSON
                 content: s.title || "Sem título", 
                 x: 60, 
                 y: titleY, 
+                width: maxWidth,
                 fontSize: titleFontSize,
                 color: 'var(--theme-text)'
               },
@@ -397,9 +610,12 @@ IMPORTANTE: Não use markdown, não adicione explicações extras, apenas o JSON
                 type: 'text', 
                 content: s.subtitle || "", 
                 x: 60, 
-                y: subtitleY, 
+                y: subtitleY,
+                width: maxWidth,
                 fontSize: subtitleFontSize,
-                color: 'var(--theme-text)'
+                color: 'var(--theme-text)',
+                // Justificar texto se for muito longo
+                ...(subtitleLength > 150 ? { textAlign: 'justify' } : {})
               }
             ]
           };
@@ -421,7 +637,7 @@ IMPORTANTE: Não use markdown, não adicione explicações extras, apenas o JSON
   };
 
   return (
-    <div className={`app-container app-theme-${appTheme}`}>
+    <div className={`app-container app-theme-${appTheme} ${currentScreen === 'editor' ? 'editor-mode' : ''}`}>
       <input 
         type="file" 
         ref={fileInputRef} 
@@ -429,117 +645,191 @@ IMPORTANTE: Não use markdown, não adicione explicações extras, apenas o JSON
         accept="image/*"
         onChange={handleImageSelect}
       />
-      <header>
-        <div className="logo-section">
-          <div className="logo-icon">MS</div>
-          <h1>MangoSlides</h1>
-        </div>
-        <div className="header-actions">
-          <button 
-            className="btn-secondary" 
-            onClick={() => setAppTheme(prev => prev === 'light' ? 'dark' : 'light')}
-            style={{ width: '40px', padding: '0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            title={`Alternar para modo ${appTheme === 'light' ? 'escuro' : 'claro'}`}
-          >
-            {appTheme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
-          </button>
-          <button className="btn-secondary">Exportar</button>
-          <button className="btn-primary" onClick={() => setIsAiModalOpen(true)}>Apresentar</button>
-        </div>
-      </header>
 
-      <Sidebar 
-        slides={slides}
-        activeSlideId={activeSlideId}
-        setActiveSlideId={setActiveSlideId}
-        addSlide={addSlide}
-        deleteSlide={deleteSlide}
-        theme={activeTheme}
-        font={activeFont}
-      />
-
-      <main>
-        <Toolbar 
-          activeTool={activeTool}
-          setActiveTool={setActiveTool}
-          activeTheme={activeTheme}
-          setActiveTheme={setActiveTheme}
-          activeFont={activeFont}
-          setActiveFont={setActiveFont}
-          addElement={addElement}
-          activeSlideId={activeSlideId}
-          updateSlide={updateSlide}
-          onOpenAiModal={() => setIsAiModalOpen(true)}
-          onOpenSettings={() => setIsSettingsOpen(true)}
-          onToggleLayers={() => setIsLayersOpen(!isLayersOpen)}
+      {currentScreen === 'projects' ? (
+        <ProjectsScreen
+          projects={projects}
+          onCreateNew={createNewProject}
+          onOpenProject={openProject}
+          onDeleteProject={deleteProject}
+          onRenameProject={renameProject}
         />
+      ) : (
+        <>
+          <header>
+            <div className="logo-section">
+              <div className="logo-icon">MS</div>
+              <h1>MangoSlides</h1>
+            </div>
+            <div className="header-actions">
+              <button 
+                onClick={saveCurrentProject}
+                disabled={isSaving || !hasUnsavedChanges}
+                style={{
+                  background: hasUnsavedChanges ? 'var(--accent)' : 'var(--bg-main)',
+                  border: `1px solid ${hasUnsavedChanges ? 'var(--accent)' : 'var(--border)'}`,
+                  borderRadius: '8px',
+                  padding: '8px 16px',
+                  color: hasUnsavedChanges ? 'white' : 'var(--text-primary)',
+                  cursor: isSaving || !hasUnsavedChanges ? 'not-allowed' : 'pointer',
+                  fontSize: '0.9rem',
+                  fontWeight: 500,
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  opacity: isSaving || !hasUnsavedChanges ? 0.5 : 1
+                }}
+                title={hasUnsavedChanges ? 'Salvar alterações' : 'Nenhuma alteração pendente'}
+              >
+                {isSaving ? (
+                  <>
+                    <div style={{
+                      width: '16px',
+                      height: '16px',
+                      border: '2px solid currentColor',
+                      borderTopColor: 'transparent',
+                      borderRadius: '50%',
+                      animation: 'spin 0.6s linear infinite'
+                    }} />
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    {hasUnsavedChanges && <AlertCircle size={16} />}
+                    <Save size={16} />
+                    Salvar
+                  </>
+                )}
+              </button>
+              <button 
+                onClick={backToProjects}
+                style={{
+                  background: 'var(--bg-main)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '8px',
+                  padding: '8px 16px',
+                  color: 'var(--text-primary)',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                  fontWeight: 500,
+                  transition: 'all 0.2s'
+                }}
+              >
+                ← Voltar aos Projetos
+              </button>
+              <button 
+                onClick={() => setAppTheme(appTheme === 'dark' ? 'light' : 'dark')}
+                style={{
+                  background: 'var(--bg-main)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '8px',
+                  padding: '8px 12px',
+                  color: 'var(--text-primary)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                {appTheme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+              </button>
+            </div>
+          </header>
 
-        <Canvas 
-          activeSlide={activeSlide}
-          activeTool={activeTool}
-          selectedElementId={selectedElementId}
-          setSelectedElementId={setSelectedElementId}
-          updateSlide={updateSlide}
-          updateElement={updateElement}
-          moveElement={moveElement}
-          deleteElement={deleteElement}
-          theme={activeTheme}
-          font={activeFont}
-        />
+          <Sidebar
+            slides={slides}
+            activeSlideId={activeSlideId}
+            onSlideSelect={setActiveSlideId}
+            onAddSlide={addSlide}
+            onDeleteSlide={deleteSlide}
+            onDuplicateSlide={duplicateSlide}
+            onReorderSlides={reorderSlides}
+          />
 
-        <AnimatePresence>
-          {isLayersOpen && (
-            <LayersPanel 
-              activeSlide={activeSlide}
-              selectedElementId={selectedElementId}
-              onSelectElement={setSelectedElementId}
-              onMoveElement={moveElement}
-              onClose={() => setIsLayersOpen(false)}
+          <main>
+            <Toolbar
+              activeTool={activeTool}
+              setActiveTool={setActiveTool}
+              activeTheme={activeTheme}
+              setActiveTheme={setActiveTheme}
+              activeFont={activeFont}
+              setActiveFont={setActiveFont}
+              addElement={addElement}
+              onOpenSettings={() => setIsSettingsOpen(true)}
+              onOpenAiModal={() => setIsAiModalOpen(true)}
+              activeSlideId={activeSlideId}
+              updateSlide={updateSlide}
+              onToggleLayers={() => setIsLayersOpen(!isLayersOpen)}
             />
-          )}
-        </AnimatePresence>
-      </main>
 
-      <AnimatePresence>
-        <SettingsModal 
-          isOpen={isSettingsOpen}
-          onClose={() => setIsSettingsOpen(false)}
-          geminiKey={geminiKey}
-          setGeminiKey={setGeminiKey}
-          geminiEnabled={geminiEnabled}
-          setGeminiEnabled={setGeminiEnabled}
-          onSave={saveSettings}
-        />
-      </AnimatePresence>
+            <Canvas
+              activeSlide={activeSlide}
+              activeTool={activeTool}
+              selectedElementId={selectedElementId}
+              setSelectedElementId={setSelectedElementId}
+              updateSlide={updateSlide}
+              updateElement={updateElement}
+              moveElement={moveElement}
+              deleteElement={deleteElement}
+              theme={activeTheme}
+              font={activeFont}
+            />
+          </main>
 
-      <AnimatePresence>
-        <AiModal 
-          isOpen={isAiModalOpen}
-          onClose={() => setIsAiModalOpen(false)}
-          isGenerating={isGenerating}
-          aiPrompt={aiPrompt}
-          setAiPrompt={setAiPrompt}
-          selectedModel={selectedModel}
-          setSelectedModel={setSelectedModel}
-          contentDensity={contentDensity}
-          setContentDensity={setContentDensity}
-          numSlides={numSlides}
-          setNumSlides={setNumSlides}
-          includeQuiz={includeQuiz}
-          setIncludeQuiz={setIncludeQuiz}
-          numQuizQuestions={numQuizQuestions}
-          setNumQuizQuestions={setNumQuizQuestions}
-          onGenerate={generateContent}
-        />
-      </AnimatePresence>
+          <AnimatePresence>
+            {isLayersOpen && (
+              <LayersPanel
+                elements={activeSlide.elements}
+                selectedElementId={selectedElementId}
+                onSelectElement={setSelectedElementId}
+                onReorder={(fromIndex: number, toIndex: number) => {
+                  const direction = fromIndex < toIndex ? 'forward' : 'backward';
+                  moveElement(activeSlideId, activeSlide.elements[fromIndex].id, direction);
+                }}
+                onClose={() => setIsLayersOpen(false)}
+              />
+            )}
+          </AnimatePresence>
 
-      <AnimatePresence>
-        <ErrorModal 
-          isOpen={isErrorModalOpen}
-          onClose={() => setIsErrorModalOpen(false)}
-          errorDetails={errorDetails}
-        />
-      </AnimatePresence>
+          <SettingsModal
+            isOpen={isSettingsOpen}
+            onClose={() => setIsSettingsOpen(false)}
+            geminiKey={geminiKey}
+            setGeminiKey={setGeminiKey}
+            geminiEnabled={geminiEnabled}
+            setGeminiEnabled={setGeminiEnabled}
+            selectedModel={selectedModel}
+            setSelectedModel={setSelectedModel}
+            onSave={saveSettings}
+          />
+
+          <AiModal
+            isOpen={isAiModalOpen}
+            onClose={() => setIsAiModalOpen(false)}
+            isGenerating={isGenerating}
+            aiPrompt={aiPrompt}
+            setAiPrompt={setAiPrompt}
+            selectedModel={selectedModel}
+            setSelectedModel={setSelectedModel}
+            contentDensity={contentDensity}
+            setContentDensity={setContentDensity}
+            numSlides={numSlides}
+            setNumSlides={setNumSlides}
+            includeQuiz={includeQuiz}
+            setIncludeQuiz={setIncludeQuiz}
+            numQuizQuestions={numQuizQuestions}
+            setNumQuizQuestions={setNumQuizQuestions}
+            onGenerate={generateContent}
+          />
+
+          <ErrorModal
+            isOpen={isErrorModalOpen}
+            onClose={() => setIsErrorModalOpen(false)}
+            errorDetails={errorDetails}
+          />
+        </>
+      )}
     </div>
   );
 }

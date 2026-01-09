@@ -39,7 +39,7 @@ const ElementVisual = ({ el }: { el: SlideElement }) => {
           fontStyle: el.fontStyle || 'normal',
           width: '100%',
           height: '100%',
-          textAlign: 'left',
+          textAlign: (el as any).textAlign || 'left',
           padding: '10px',
           color: el.color || 'inherit',
           whiteSpace: 'pre-wrap',

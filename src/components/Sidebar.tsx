@@ -5,21 +5,19 @@ import { Slide } from "../types";
 interface SidebarProps {
   slides: Slide[];
   activeSlideId: string;
-  setActiveSlideId: (id: string) => void;
-  addSlide: () => void;
-  deleteSlide: (id: string, e: React.MouseEvent) => void;
-  theme: string;
-  font: string;
+  onSlideSelect: (id: string) => void;
+  onAddSlide: () => void;
+  onDeleteSlide: (id: string, e: React.MouseEvent) => void;
+  onDuplicateSlide?: (id: string) => void;
+  onReorderSlides?: (fromIndex: number, toIndex: number) => void;
 }
 
 export const Sidebar = ({ 
   slides, 
   activeSlideId, 
-  setActiveSlideId, 
-  addSlide, 
-  deleteSlide,
-  theme,
-  font
+  onSlideSelect, 
+  onAddSlide, 
+  onDeleteSlide
 }: SidebarProps) => {
   return (
     <aside className="sidebar">
@@ -31,14 +29,14 @@ export const Sidebar = ({
         {slides.map((slide, index) => (
           <div 
             key={slide.id} 
-            className={`slide-thumb theme-${theme} font-${font} ${activeSlideId === slide.id ? "active" : ""}`}
-            onClick={() => setActiveSlideId(slide.id)}
+            className={`slide-thumb ${activeSlideId === slide.id ? "active" : ""}`}
+            onClick={() => onSlideSelect(slide.id)}
           >
             <span className="slide-thumb-number">{index + 1}</span>
             {slides.length > 1 && (
               <button 
                 className="delete-slide-btn" 
-                onClick={(e) => deleteSlide(slide.id, e)}
+                onClick={(e) => onDeleteSlide(slide.id, e)}
                 title="Excluir slide"
               >
                 <Trash2 size={14} />
@@ -51,7 +49,7 @@ export const Sidebar = ({
         ))}
       </div>
 
-      <button className="add-slide-btn btn-secondary" onClick={addSlide}>
+      <button className="add-slide-btn btn-secondary" onClick={onAddSlide}>
         <Plus size={20} />
         Novo Slide
       </button>

@@ -1,3 +1,13 @@
+export interface Project {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+  slides: Slide[];
+  activeTheme: SlideTheme;
+  activeFont: SlideFont;
+}
+
 export interface SlideElement {
   id: string;
   type: 'text' | 'image' | 'rect' | 'circle';
