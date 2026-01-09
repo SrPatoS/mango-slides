@@ -648,16 +648,21 @@ IMPORTANTE: Não use markdown, não adicione explicações extras, apenas o JSON
             else if (subtitleLength > 100) subtitleFontSize = 22;
           }
           
-          // Calcular altura estimada do título (aproximação)
-          const titleLines = Math.ceil(titleLength / 40); // ~40 chars por linha
-          const titleHeight = titleFontSize * titleLines * 1.2; // line-height ~1.2
-          
-          // Ajustar posição Y do subtítulo baseado na altura real do título
-          const titleY = 100; // Começar um pouco mais alto
-          const subtitleY = titleY + titleHeight + 30; // 30px de margem entre título e subtítulo
-          
           // Largura máxima para o texto (deixar margem dos dois lados)
           const maxWidth = 880; // 1000 - 60 (margem esq) - 60 (margem dir)
+
+          // Estimar caracteres por linha de forma mais precisa para evitar sobreposição
+          // Assumindo largura média de caractere como 0.6 * fontSize (aproximação conservadora)
+          const avgCharWidth = titleFontSize * 0.6; 
+          const charsPerLine = Math.floor(maxWidth / avgCharWidth);
+          
+          const titleLines = Math.ceil(titleLength / charsPerLine); 
+          // line-height ~1.3 para dar respiro
+          const titleHeight = titleFontSize * titleLines * 1.3; 
+          
+          // Ajustar posição Y do subtítulo baseado na altura real do título
+          const titleY = 80; // Começar um pouco mais alto para aproveitar espaço
+          const subtitleY = titleY + titleHeight + 40; // 40px de margem segura entre título e subtítulo
           
           return {
             id: slideId,
