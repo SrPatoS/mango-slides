@@ -24,4 +24,6 @@ tauri-plugin-sql = { version = "2", features = ["sqlite"] }
 magic-crypt = "3.1.10"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+tauri-plugin-fs = "2"
+tauri-plugin-dialog = "2"
 

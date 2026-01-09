@@ -722,6 +722,7 @@ IMPORTANTE: Não use markdown, não adicione explicações extras, apenas o JSON
           onOpenProject={openProject}
           onDeleteProject={deleteProject}
           onRenameProject={renameProject}
+          onOpenSettings={() => setIsSettingsOpen(true)}
           onConfirmDelete={(projectId, projectName) => {
             setConfirmModal({
               isOpen: true,
@@ -892,47 +893,48 @@ IMPORTANTE: Não use markdown, não adicione explicações extras, apenas o JSON
             )}
           </AnimatePresence>
 
-          <SettingsModal
-            isOpen={isSettingsOpen}
-            onClose={() => setIsSettingsOpen(false)}
-            geminiKey={geminiKey}
-            setGeminiKey={setGeminiKey}
-            geminiEnabled={geminiEnabled}
-            setGeminiEnabled={setGeminiEnabled}
-            selectedModel={selectedModel}
-            setSelectedModel={setSelectedModel}
-            onSave={saveSettings}
-            onResetDatabase={resetDatabase}
-          />
-
-          <AiModal
-            isOpen={isAiModalOpen}
-            onClose={() => setIsAiModalOpen(false)}
-            isGenerating={isGenerating}
-            aiPrompt={aiPrompt}
-            setAiPrompt={setAiPrompt}
-            selectedModel={selectedModel}
-            setSelectedModel={setSelectedModel}
-            contentDensity={contentDensity}
-            setContentDensity={setContentDensity}
-            numSlides={numSlides}
-            setNumSlides={setNumSlides}
-            includeQuiz={includeQuiz}
-            setIncludeQuiz={setIncludeQuiz}
-            numQuizQuestions={numQuizQuestions}
-            setNumQuizQuestions={setNumQuizQuestions}
-            onGenerate={generateContent}
-          />
-
-          <ErrorModal
-            isOpen={isErrorModalOpen}
-            onClose={() => setIsErrorModalOpen(false)}
-            errorDetails={errorDetails}
-          />
         </>
       )}
       
-      {/* Global Confirm Modal */}
+      {/* Global Modals */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        geminiKey={geminiKey}
+        setGeminiKey={setGeminiKey}
+        geminiEnabled={geminiEnabled}
+        setGeminiEnabled={setGeminiEnabled}
+        selectedModel={selectedModel}
+        setSelectedModel={setSelectedModel}
+        onSave={saveSettings}
+        onResetDatabase={resetDatabase}
+      />
+
+      <AiModal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+        isGenerating={isGenerating}
+        aiPrompt={aiPrompt}
+        setAiPrompt={setAiPrompt}
+        selectedModel={selectedModel}
+        setSelectedModel={setSelectedModel}
+        contentDensity={contentDensity}
+        setContentDensity={setContentDensity}
+        numSlides={numSlides}
+        setNumSlides={setNumSlides}
+        includeQuiz={includeQuiz}
+        setIncludeQuiz={setIncludeQuiz}
+        numQuizQuestions={numQuizQuestions}
+        setNumQuizQuestions={setNumQuizQuestions}
+        onGenerate={generateContent}
+      />
+
+      <ErrorModal
+        isOpen={isErrorModalOpen}
+        onClose={() => setIsErrorModalOpen(false)}
+        errorDetails={errorDetails}
+      />
+
       <ConfirmModal
         isOpen={confirmModal.isOpen}
         title={confirmModal.title}

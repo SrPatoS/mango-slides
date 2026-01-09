@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Project } from "../types";
-import { Presentation, Plus, Trash2, Edit2, Calendar, Layers } from "lucide-react";
+import { Presentation, Plus, Trash2, Edit2, Calendar, Layers, Settings } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface ProjectsScreenProps {
@@ -10,6 +10,7 @@ interface ProjectsScreenProps {
   onDeleteProject: (projectId: string) => void;
   onRenameProject: (projectId: string, newName: string) => void;
   onConfirmDelete?: (projectId: string, projectName: string) => void;
+  onOpenSettings?: () => void;
 }
 
 export const ProjectsScreen = ({ 
@@ -18,7 +19,8 @@ export const ProjectsScreen = ({
   onOpenProject, 
   onDeleteProject,
   onRenameProject,
-  onConfirmDelete
+  onConfirmDelete,
+  onOpenSettings
 }: ProjectsScreenProps) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
@@ -55,13 +57,51 @@ export const ProjectsScreen = ({
       flexDirection: 'column',
       alignItems: 'center',
       padding: '60px 40px',
-      overflowY: 'auto'
+      overflowY: 'auto',
+      position: 'relative' // Added for absolute positioning context
     }}>
+      {onOpenSettings && (
+        <button
+          onClick={onOpenSettings}
+          style={{
+            position: 'absolute',
+            top: '40px',
+            right: '40px',
+            background: 'var(--bg-sidebar)',
+            border: '1px solid var(--border)',
+            borderRadius: '12px',
+            padding: '12px',
+            color: 'var(--text-primary)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.2s',
+            zIndex: 10
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.background = 'var(--accent)';
+            e.currentTarget.style.borderColor = 'var(--accent)';
+            e.currentTarget.style.color = 'white';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.background = 'var(--bg-sidebar)';
+            e.currentTarget.style.borderColor = 'var(--border)';
+            e.currentTarget.style.color = 'var(--text-primary)';
+          }}
+          title="Configurações"
+        >
+          <Settings size={24} />
+        </button>
+      )}
+
       {/* Header */}
       <div style={{
-        maxWidth: '1200px',
-        width: '100%',
-        marginBottom: '40px'
+        textAlign: 'center',
+        marginBottom: '48px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center'
       }}>
         <h1 style={{
           fontSize: '2.5rem',

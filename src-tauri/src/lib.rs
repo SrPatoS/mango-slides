@@ -13,12 +13,15 @@ fn encrypt_key(key: &str) -> String {
 #[command]
 fn decrypt_key(encrypted_key: &str) -> String {
     let mc = new_magic_crypt!(MASTER_KEY, 256);
-    mc.decrypt_base64_to_string(encrypted_key).unwrap_or_default()
+    mc.decrypt_base64_to_string(encrypted_key)
+        .unwrap_or_default()
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_sql::Builder::default().build())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![encrypt_key, decrypt_key])
