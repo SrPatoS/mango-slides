@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import Database from "@tauri-apps/plugin-sql";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { Moon, Sun, Save, AlertCircle, Settings } from "lucide-react";
+import { Moon, Sun, Save, AlertCircle, Settings, Download, FileText, Presentation } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 
 // Components
@@ -18,6 +18,8 @@ import { ConfirmModal } from "./components/ConfirmModal";
 
 // Types
 import { Slide, SlideTheme, SlideFont, Project } from "./types";
+import { exportToPdf } from "./utils/exportPdf";
+import { exportToPptx } from "./utils/exportPptx";
 
 import "./App.css";
 
@@ -40,6 +42,28 @@ function App() {
     message: '',
     onConfirm: () => {}
   });
+
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
+
+  const handleExport = async (type: 'pdf' | 'pptx') => {
+      setIsExportMenuOpen(false);
+      const activeProject = projects.find(p => p.id === currentProjectId);
+      const filename = (activeProject?.name || "apresentacao");
+      
+      document.body.style.cursor = 'wait';
+      try {
+          if (type === 'pdf') {
+              await exportToPdf(slides, activeTheme, `${filename}.pdf`);
+          } else {
+              await exportToPptx(slides, `${filename}.pptx`);
+          }
+      } catch (e) {
+          console.error("Export falhou", e);
+          // Poderia usar um toast aqui
+      } finally {
+          document.body.style.cursor = 'default';
+      }
+  };
   
   // Existing states
   const [slides, setSlides] = useState<Slide[]>([
@@ -805,6 +829,89 @@ IMPORTANTE: Não use markdown, não adicione explicações extras, apenas o JSON
               >
                 ← Voltar aos Projetos
               </button>
+              <div style={{ position: 'relative', marginRight: '8px' }}>
+                <button 
+                    onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
+                    style={{
+                    background: 'var(--bg-main)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '8px',
+                    padding: '8px 12px',
+                    color: 'var(--text-primary)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.2s',
+                    }}
+                    title="Exportar Apresentação"
+                >
+                    <Download size={20} />
+                </button>
+                {isExportMenuOpen && (
+                    <div style={{
+                        position: 'absolute',
+                        top: '110%',
+                        right: 0,
+                        backgroundColor: 'var(--bg-sidebar)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '8px',
+                        padding: '6px',
+                        width: '180px',
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                        zIndex: 100,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '4px'
+                    }}>
+                        <button 
+                            onClick={() => handleExport('pdf')}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                width: '100%',
+                                padding: '8px 12px',
+                                border: 'none',
+                                background: 'transparent',
+                                color: 'var(--text-primary)',
+                                cursor: 'pointer',
+                                fontSize: '0.9rem',
+                                borderRadius: '4px',
+                                textAlign: 'left'
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-main)'}
+                            onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        >
+                            <FileText size={16} color="#ef4444" />
+                            <span>Exportar PDF</span>
+                        </button>
+                        <button 
+                            onClick={() => handleExport('pptx')}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                width: '100%',
+                                padding: '8px 12px',
+                                border: 'none',
+                                background: 'transparent',
+                                color: 'var(--text-primary)',
+                                cursor: 'pointer',
+                                fontSize: '0.9rem',
+                                borderRadius: '4px',
+                                textAlign: 'left'
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-main)'}
+                            onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        >
+                            <Presentation size={16} color="#f97316" />
+                            <span>Exportar PPTX</span>
+                        </button>
+                    </div>
+                )}
+              </div>
+
               <button 
                 onClick={() => setAppTheme(appTheme === 'dark' ? 'light' : 'dark')}
                 style={{
