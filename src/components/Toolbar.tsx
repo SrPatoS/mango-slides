@@ -7,7 +7,6 @@ import {
   Circle, 
   Layers, 
   Sparkles, 
-  Settings,
   Palette,
   PaintBucket,
   ALargeSmall
@@ -25,7 +24,6 @@ interface ToolbarProps {
   activeSlideId: string;
   updateSlide: (id: string, updates: Partial<Slide>) => void;
   onOpenAiModal: () => void;
-  onOpenSettings: () => void;
   onToggleLayers: () => void;
 }
 
@@ -39,8 +37,7 @@ export const Toolbar = ({
   addElement,
   activeSlideId,
   updateSlide,
-  onOpenAiModal, 
-  onOpenSettings,
+  onOpenAiModal,
   onToggleLayers
 }: ToolbarProps) => {
   const [isThemeOpen, setIsThemeOpen] = useState(false);
@@ -95,8 +92,7 @@ export const Toolbar = ({
       className: 'ai-sparkle',
       onClick: onOpenAiModal,
       title: 'Gerar com IA'
-    },
-    { id: 'settings', icon: Settings, onClick: onOpenSettings, title: 'Configurações' },
+    }
   ];
 
   return (

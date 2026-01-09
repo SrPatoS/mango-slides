@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import Database from "@tauri-apps/plugin-sql";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { Moon, Sun, Save, AlertCircle } from "lucide-react";
+import { Moon, Sun, Save, AlertCircle, Settings } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 
 // Components
@@ -14,6 +14,7 @@ import { AiModal } from "./components/AiModal";
 import { ErrorModal } from "./components/ErrorModal";
 import { LayersPanel } from "./components/LayersPanel";
 import { ProjectsScreen } from "./components/ProjectsScreen";
+import { ConfirmModal } from "./components/ConfirmModal";
 
 // Types
 import { Slide, SlideTheme, SlideFont, Project } from "./types";
@@ -25,6 +26,20 @@ function App() {
   const [currentScreen, setCurrentScreen] = useState<'projects' | 'editor'>('projects');
   const [projects, setProjects] = useState<Project[]>([]);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
+  
+  // Confirmation Modal
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type?: 'info' | 'warning' | 'success' | 'danger';
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  });
   
   // Existing states
   const [slides, setSlides] = useState<Slide[]>([
@@ -271,23 +286,58 @@ function App() {
   const renameProject = async (projectId: string, newName: string) => {
     try {
       const db = await Database.load("sqlite:slideflow.db");
-      await db.execute("UPDATE projects SET name = ? WHERE id = ?", [newName, projectId]);
-      setProjects(prev => prev.map(p => p.id === projectId ? { ...p, name: newName } : p));
+      await db.execute(
+        "UPDATE projects SET name = ?, updated_at = ? WHERE id = ?",
+        [newName, new Date().toISOString(), projectId]
+      );
+      setProjects(prev => prev.map(p => 
+        p.id === projectId ? { ...p, name: newName, updatedAt: new Date().toISOString() } : p
+      ));
       console.log(`✏️ Projeto renomeado para "${newName}"`);
     } catch (err) {
       console.error("❌ Erro ao renomear projeto:", err);
     }
   };
 
+  const resetDatabase = () => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Resetar Banco de Dados',
+      message: 'Tem certeza que deseja resetar o banco de dados? Todos os seus projetos e configurações serão PERMANENTEMENTE excluídos. Esta ação não pode ser desfeita!',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          const db = await Database.load("sqlite:slideflow.db");
+          await db.execute("DELETE FROM projects");
+          setProjects([]);
+          setCurrentScreen('projects');
+          setCurrentProjectId(null);
+          setConfirmModal({ ...confirmModal, isOpen: false });
+          console.log('🗑️ Banco de dados resetado');
+        } catch (err) {
+          console.error("❌ Erro ao resetar banco de dados:", err);
+          alert("Erro ao resetar o banco de dados.");
+        }
+      }
+    });
+  };
+
   const backToProjects = async () => {
     if (hasUnsavedChanges) {
-      const confirmed = confirm("Você tem alterações não salvas. Deseja salvar antes de voltar?");
-      if (confirmed) {
-        await saveCurrentProject();
-      } else {
-        const discard = confirm("Tem certeza que deseja descartar as alterações?");
-        if (!discard) return;
-      }
+      setConfirmModal({
+        isOpen: true,
+        title: 'Alterações não salvas',
+        message: 'Você tem alterações não salvas. Deseja salvar antes de voltar?',
+        type: 'warning',
+        onConfirm: async () => {
+          await saveCurrentProject();
+          setConfirmModal({ ...confirmModal, isOpen: false });
+          setCurrentScreen('projects');
+          setCurrentProjectId(null);
+          setHasUnsavedChanges(false);
+        }
+      });
+      return;
     }
     setCurrentScreen('projects');
     setCurrentProjectId(null);
@@ -672,6 +722,18 @@ IMPORTANTE: Não use markdown, não adicione explicações extras, apenas o JSON
           onOpenProject={openProject}
           onDeleteProject={deleteProject}
           onRenameProject={renameProject}
+          onConfirmDelete={(projectId, projectName) => {
+            setConfirmModal({
+              isOpen: true,
+              title: 'Excluir Projeto',
+              message: `Deseja realmente excluir "${projectName}"? Esta ação não pode ser desfeita.`,
+              type: 'danger',
+              onConfirm: () => {
+                deleteProject(projectId);
+                setConfirmModal({ ...confirmModal, isOpen: false });
+              }
+            });
+          }}
         />
       ) : (
         <>
@@ -748,10 +810,30 @@ IMPORTANTE: Não use markdown, não adicione explicações extras, apenas o JSON
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center'
+                  justifyContent: 'center',
+                  transition: 'all 0.2s'
                 }}
+                title="Alternar tema"
               >
                 {appTheme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+              </button>
+              <button 
+                onClick={() => setIsSettingsOpen(true)}
+                style={{
+                  background: 'var(--bg-main)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '8px',
+                  padding: '8px 12px',
+                  color: 'var(--text-primary)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s'
+                }}
+                title="Configurações"
+              >
+                <Settings size={20} />
               </button>
             </div>
           </header>
@@ -775,7 +857,6 @@ IMPORTANTE: Não use markdown, não adicione explicações extras, apenas o JSON
               activeFont={activeFont}
               setActiveFont={setActiveFont}
               addElement={addElement}
-              onOpenSettings={() => setIsSettingsOpen(true)}
               onOpenAiModal={() => setIsAiModalOpen(true)}
               activeSlideId={activeSlideId}
               updateSlide={updateSlide}
@@ -821,6 +902,7 @@ IMPORTANTE: Não use markdown, não adicione explicações extras, apenas o JSON
             selectedModel={selectedModel}
             setSelectedModel={setSelectedModel}
             onSave={saveSettings}
+            onResetDatabase={resetDatabase}
           />
 
           <AiModal
@@ -849,6 +931,16 @@ IMPORTANTE: Não use markdown, não adicione explicações extras, apenas o JSON
           />
         </>
       )}
+      
+      {/* Global Confirm Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        type={confirmModal.type}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+      />
     </div>
   );
 }

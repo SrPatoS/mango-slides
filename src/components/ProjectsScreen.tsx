@@ -9,6 +9,7 @@ interface ProjectsScreenProps {
   onOpenProject: (projectId: string) => void;
   onDeleteProject: (projectId: string) => void;
   onRenameProject: (projectId: string, newName: string) => void;
+  onConfirmDelete?: (projectId: string, projectName: string) => void;
 }
 
 export const ProjectsScreen = ({ 
@@ -16,7 +17,8 @@ export const ProjectsScreen = ({
   onCreateNew, 
   onOpenProject, 
   onDeleteProject,
-  onRenameProject 
+  onRenameProject,
+  onConfirmDelete
 }: ProjectsScreenProps) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
@@ -268,7 +270,9 @@ export const ProjectsScreen = ({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (confirm(`Deseja realmente excluir "${project.name}"?`)) {
+                    if (onConfirmDelete) {
+                      onConfirmDelete(project.id, project.name);
+                    } else if (confirm(`Deseja realmente excluir "${project.name}"?`)) {
                       onDeleteProject(project.id);
                     }
                   }}
