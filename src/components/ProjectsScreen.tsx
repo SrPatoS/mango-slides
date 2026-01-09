@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Project } from "../types";
-import { Presentation, Plus, Trash2, Edit2, Calendar, Layers, Settings } from "lucide-react";
+import { Presentation, Plus, Trash2, Edit2, Calendar, Layers, Settings, Search } from "lucide-react";
 import { motion } from "framer-motion";
+import { SlideRenderer } from "./SlideRenderer";
 
 interface ProjectsScreenProps {
   projects: Project[];
@@ -24,6 +25,7 @@ export const ProjectsScreen = ({
 }: ProjectsScreenProps) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const handleStartEdit = (project: Project) => {
     setEditingId(project.id);
@@ -48,6 +50,10 @@ export const ProjectsScreen = ({
     });
   };
 
+  const filteredProjects = projects.filter(project => 
+    project.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div style={{
       width: '100%',
@@ -58,7 +64,7 @@ export const ProjectsScreen = ({
       alignItems: 'center',
       padding: '60px 40px',
       overflowY: 'auto',
-      position: 'relative' // Added for absolute positioning context
+      position: 'relative'
     }}>
       {onOpenSettings && (
         <button
@@ -95,13 +101,14 @@ export const ProjectsScreen = ({
         </button>
       )}
 
-      {/* Header */}
       <div style={{
         textAlign: 'center',
-        marginBottom: '48px',
+        marginBottom: '32px',
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center'
+        alignItems: 'center',
+        width: '100%',
+        maxWidth: '600px'
       }}>
         <h1 style={{
           fontSize: '2.5rem',
@@ -114,13 +121,49 @@ export const ProjectsScreen = ({
         </h1>
         <p style={{
           fontSize: '1rem',
-          color: 'var(--text-secondary)'
+          color: 'var(--text-secondary)',
+          marginBottom: '32px'
         }}>
           Gerencie suas apresentações e rascunhos
         </p>
+
+        <div style={{ 
+            position: 'relative', 
+            width: '100%', 
+            maxWidth: '480px' 
+        }}>
+            <Search 
+                size={20} 
+                style={{ 
+                    position: 'absolute', 
+                    left: '16px', 
+                    top: '50%', 
+                    transform: 'translateY(-50%)', 
+                    color: 'var(--text-secondary)' 
+                }} 
+            />
+            <input 
+                type="text" 
+                placeholder="Buscar projetos..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{
+                    width: '100%',
+                    padding: '14px 16px 14px 48px',
+                    borderRadius: '12px',
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg-sidebar)',
+                    color: 'var(--text-primary)',
+                    fontSize: '1rem',
+                    outline: 'none',
+                    transition: 'border-color 0.2s'
+                }}
+                onFocus={(e) => e.target.style.borderColor = 'var(--accent)'}
+                onBlur={(e) => e.target.style.borderColor = 'var(--border)'}
+            />
+        </div>
       </div>
 
-      {/* Projects Grid */}
       <div style={{
         maxWidth: '1200px',
         width: '100%',
@@ -128,60 +171,62 @@ export const ProjectsScreen = ({
         gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
         gap: '24px'
       }}>
-        {/* New Project Card */}
-        <motion.div
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={onCreateNew}
-          style={{
-            background: 'var(--bg-sidebar)',
-            border: '2px dashed var(--border)',
-            borderRadius: '16px',
-            padding: '40px',
-            cursor: 'pointer',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '16px',
-            minHeight: '280px',
-            transition: 'all 0.3s var(--easing)'
-          }}
-        >
-          <div style={{
-            width: '64px',
-            height: '64px',
-            borderRadius: '50%',
-            background: 'var(--accent)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white'
-          }}>
-            <Plus size={32} />
-          </div>
-          <span style={{
-            fontSize: '1.1rem',
-            fontWeight: 600,
-            color: 'var(--text-primary)'
-          }}>
-            Novo Projeto
-          </span>
-          <span style={{
-            fontSize: '0.9rem',
-            color: 'var(--text-secondary)',
-            textAlign: 'center'
-          }}>
-            Crie uma nova apresentação do zero
-          </span>
-        </motion.div>
+        {!searchTerm && (
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={onCreateNew}
+            style={{
+              background: 'var(--bg-sidebar)',
+              border: '2px dashed var(--border)',
+              borderRadius: '16px',
+              padding: '40px',
+              cursor: 'pointer',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '16px',
+              minHeight: '280px',
+              transition: 'all 0.3s var(--easing)'
+            }}
+          >
+            <div style={{
+              width: '64px',
+              height: '64px',
+              borderRadius: '50%',
+              background: 'var(--accent)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white'
+            }}>
+              <Plus size={32} />
+            </div>
+            <span style={{
+              fontSize: '1.1rem',
+              fontWeight: 600,
+              color: 'var(--text-primary)'
+            }}>
+              Novo Projeto
+            </span>
+            <span style={{
+              fontSize: '0.9rem',
+              color: 'var(--text-secondary)',
+              textAlign: 'center'
+            }}>
+              Crie uma nova apresentação do zero
+            </span>
+          </motion.div>
+        )}
 
-        {/* Existing Projects */}
-        {projects.map((project) => (
+        {filteredProjects.map((project) => (
           <motion.div
             key={project.id}
+            layout
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9 }}
             whileHover={{ scale: 1.02 }}
             style={{
               background: 'var(--bg-sidebar)',
@@ -190,43 +235,77 @@ export const ProjectsScreen = ({
               overflow: 'hidden',
               cursor: 'pointer',
               transition: 'all 0.3s var(--easing)',
-              position: 'relative'
+              position: 'relative',
+              display: 'flex',
+              flexDirection: 'column'
             }}
           >
-            {/* Preview */}
             <div 
               onClick={() => onOpenProject(project.id)}
               style={{
-                height: '160px',
-                background: 'linear-gradient(135deg, var(--accent) 0%, rgba(var(--accent-rgb), 0.6) 100%)',
+                height: '180px',
+                background: 'var(--bg-main)',
+                position: 'relative',
+                overflow: 'hidden',
+                borderBottom: '1px solid var(--border)',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                position: 'relative',
-                overflow: 'hidden'
+                justifyContent: 'center'
               }}
             >
-              <Presentation size={48} color="white" opacity={0.3} />
+              {project.slides && project.slides.length > 0 ? (
+                  <div style={{
+                      transform: 'scale(0.32)',
+                      transformOrigin: 'center',
+                      width: '1000px',
+                      height: '600px',
+                      pointerEvents: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                  }}>
+                    <SlideRenderer 
+                        slide={project.slides[0]} 
+                        activeTheme={project.activeTheme} 
+                        scale={1}
+                        width={1000}
+                        height={600}
+                    />
+                  </div>
+              ) : (
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    opacity: 0.5
+                  }}>
+                      <Presentation size={48} color="var(--text-secondary)" />
+                      <span style={{ marginTop: 8, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Sem slides</span>
+                  </div>
+              )}
+              
               <div style={{
                 position: 'absolute',
                 bottom: '12px',
                 right: '12px',
-                background: 'rgba(0,0,0,0.5)',
+                background: 'rgba(0,0,0,0.6)',
                 color: 'white',
-                padding: '4px 12px',
-                borderRadius: '20px',
+                padding: '4px 10px',
+                borderRadius: '12px',
                 fontSize: '0.75rem',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px'
+                gap: '6px',
+                zIndex: 5
               }}>
-                <Layers size={14} />
-                {project.slides.length} slides
+                <Layers size={12} />
+                {project.slides?.length || 0} slides
               </div>
             </div>
 
-            {/* Info */}
-            <div style={{ padding: '20px' }}>
+            <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column' }}>
               {editingId === project.id ? (
                 <input
                   type="text"
@@ -276,7 +355,6 @@ export const ProjectsScreen = ({
                 {formatDate(project.updatedAt)}
               </div>
 
-              {/* Actions */}
               <div style={{
                 display: 'flex',
                 gap: '8px'
@@ -343,7 +421,6 @@ export const ProjectsScreen = ({
         ))}
       </div>
 
-      {/* Empty State */}
       {projects.length === 0 && (
         <div style={{
           marginTop: '60px',
