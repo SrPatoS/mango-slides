@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import Database from "@tauri-apps/plugin-sql";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -50,6 +50,7 @@ function App() {
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
   const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
   const [isLayersOpen, setIsLayersOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [appTheme, setAppTheme] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('app-theme') as 'light' | 'dark') || 'dark';
   });
@@ -168,6 +169,11 @@ function App() {
   };
 
   const addElement = (type: 'text' | 'rect' | 'circle' | 'image') => {
+    if (type === 'image') {
+      fileInputRef.current?.click();
+      return;
+    }
+
     const newElement: any = {
       id: `el-${Date.now()}`,
       type,
@@ -179,11 +185,49 @@ function App() {
       fontSize: type === 'text' ? 24 : undefined,
       color: 'var(--accent)'
     };
-
+    
     setSlides(prev => prev.map(s => {
       if (s.id !== activeSlideId) return s;
       return { ...s, elements: [...s.elements, newElement] };
     }));
+    setSelectedElementId(newElement.id);
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      const img = new Image();
+      img.onload = () => {
+        const aspectRatio = img.width / img.height;
+        const width = 300;
+        const height = width / aspectRatio;
+
+        const newElement: any = {
+          id: `el-${Date.now()}`,
+          type: 'image',
+          content: dataUrl,
+          x: 200,
+          y: 150,
+          width,
+          height,
+          color: 'transparent'
+        };
+
+        setSlides(prev => prev.map(s => {
+          if (s.id !== activeSlideId) return s;
+          return { ...s, elements: [...s.elements, newElement] };
+        }));
+        setSelectedElementId(newElement.id);
+      };
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+    // Reset input so the same file can be selected again
+    e.target.value = '';
   };
 
   const deleteElement = (slideId: string, elementId: string) => {
@@ -292,6 +336,13 @@ function App() {
 
   return (
     <div className={`app-container app-theme-${appTheme}`}>
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        style={{ display: 'none' }} 
+        accept="image/*"
+        onChange={handleImageSelect}
+      />
       <header>
         <div className="logo-section">
           <div className="logo-icon">SF</div>

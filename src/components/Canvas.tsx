@@ -1,6 +1,6 @@
 import { motion, useDragControls } from "framer-motion";
 import { Slide, SlideElement } from "../types";
-import { Trash2, Bold, Italic, GripVertical, ArrowUp, ArrowDown } from "lucide-react";
+import { Trash2, Bold, Italic, GripVertical, ArrowUp, ArrowDown, ImageUp } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 
 interface CanvasProps {
@@ -59,6 +59,20 @@ const ElementVisual = ({ el }: { el: SlideElement }) => {
           borderRadius: el.type === 'circle' ? '50%' : '8px',
           transition: 'background-color 0.2s ease'
         }} />
+      )}
+
+      {el.type === 'image' && (
+        <img 
+          src={el.content} 
+          alt="" 
+          style={{ 
+            width: '100%', 
+            height: '100%', 
+            objectFit: 'contain',
+            pointerEvents: 'none',
+            userSelect: 'none'
+          }} 
+        />
       )}
     </div>
   );
@@ -222,6 +236,32 @@ const ElementControls = ({
                     />
                 </div>
               </>
+            ) : el.type === 'image' ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button 
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            const input = document.createElement('input');
+                            input.type = 'file';
+                            input.accept = 'image/*';
+                            input.onchange = (ev: any) => {
+                                const file = ev.target.files[0];
+                                if (!file) return;
+                                const reader = new FileReader();
+                                reader.onload = (event) => {
+                                    updateElement(activeSlideId, el.id, { content: event.target?.result as string });
+                                };
+                                reader.readAsDataURL(file);
+                            };
+                            input.click();
+                        }}
+                        title="Trocar Imagem"
+                        style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}
+                    >
+                        <ImageUp size={18} />
+                        Trocar Imagem
+                    </button>
+                </div>
             ) : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span style={{ fontSize: '11px', color: '#a1a1aa' }}>Cor do Fundo</span>
